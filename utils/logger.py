@@ -78,8 +78,10 @@ def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
-    if logger.handlers:
-        return logger
+    # Check if a QueueHandler is already attached
+    for handler in logger.handlers:
+        if isinstance(handler, QueueHandler):
+            return logger
 
     queue_handler = QueueHandler(log_queue)
     logger.addHandler(queue_handler)
