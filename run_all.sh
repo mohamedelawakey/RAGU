@@ -18,7 +18,7 @@ echo "Checking System OS and Activating VENV..."
 case "$OSTYPE" in
   msys* | cygwin* | win32*) 
     echo "Windows detected."
-    source venv/Scripts/activate || true
+    source venv/Scripts/activate
     ;;
   *) 
     echo "Unix-based OS (Linux/macOS) detected."
