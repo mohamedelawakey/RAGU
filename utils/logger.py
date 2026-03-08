@@ -10,7 +10,7 @@ import atexit
 import json_log_formatter
 import time
 
-LOG_DIR = os.path.join(os.getcwd(), ".Huma", "logs")
+LOG_DIR = os.path.join(os.getcwd(), ".RAGU", "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 
 log_queue = queue.Queue()
