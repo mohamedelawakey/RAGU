@@ -3,7 +3,8 @@
 set -e
 
 echo "Let's Start"
-PROJECT_DIR="$PWD"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$PROJECT_DIR"
 
 # 1. Initialize the virtual environment
 if [ ! -d "venv" ]; then
