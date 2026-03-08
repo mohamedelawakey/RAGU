@@ -1,0 +1,2 @@
+sentence-transformers==5.2.3
+docling==2.77.0
