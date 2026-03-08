@@ -65,7 +65,8 @@ def _shutdown_listener():
                         record.created = time.time()
                         handler.emit(record)
                     except Exception:
-                        pass
+                        import sys
+                        print(f"Warning: failed to emit shutdown separator to {handler}", file=sys.stderr)
 
     if listener:
         listener.stop()
@@ -77,15 +78,13 @@ atexit.register(_shutdown_listener)
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
+    logger.propagate = False
 
-    # Check if a QueueHandler is already attached
     for handler in logger.handlers:
-        if isinstance(handler, QueueHandler):
+        if isinstance(handler, QueueHandler) and getattr(handler, "queue", None) is log_queue:
             return logger
 
     queue_handler = QueueHandler(log_queue)
     logger.addHandler(queue_handler)
-
-    logger.propagate = False
 
     return logger
