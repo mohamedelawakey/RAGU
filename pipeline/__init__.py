@@ -4,5 +4,15 @@ from .cleaning.cleaner import Cleaner
 from .chunking.chunker import TextSplitter
 from .embeddings import Embedding
 from .parser.parser import DocumentExtractor
+from .LLM import CohereClient
 
-__all__ = ["Config", "Cleaner", "TextSplitter", "Embedding", "DocumentExtractor", "get_logger"]
+
+__all__ = [
+    "Config",
+    "Cleaner",
+    "TextSplitter",
+    "Embedding",
+    "DocumentExtractor",
+    "CohereClient",
+    "get_logger"
+]
