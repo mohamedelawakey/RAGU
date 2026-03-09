@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# some files
+.RAGU/
+test_e2e.py
+
+
 # Distribution / packaging
 .Python
 build/
