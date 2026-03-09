@@ -1,7 +1,8 @@
-import os
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.datamodel.base_models import InputFormat
 from . import get_logger
+import os
 
 logger = get_logger("universal_extractor.module")
 
@@ -20,7 +21,9 @@ class DocumentExtractor:
             options.do_table_structure = True
 
             cls._converter = DocumentConverter(
-                pipeline_options=options
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=options)
+                }
             )
         return cls._converter
 
