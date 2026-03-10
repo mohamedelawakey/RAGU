@@ -9,7 +9,7 @@ class PromptBuilder:
     def build(user_question: str, context: str) -> str:
         logger.info("Building secure prompt for the user question...")
 
-        if not user_question or not context:
+        if not user_question or not user_question.strip() or not context or not context.strip():
             logger.error("User question and context must not be empty")
             raise ValueError("User question and context must not be empty")
 
