@@ -20,9 +20,13 @@ REDIS_RETRY_DELAY = float(os.getenv("REDIS_RETRY_DELAY", 1.0))
 
 # milvus config
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+MILVUS_PORT = int(os.getenv("MILVUS_PORT", 19530))
 MILVUS_ALIAS = os.getenv("MILVUS_ALIAS", "default")
-MILVUS_TIMEOUT = float(os.getenv("MILVUS_TIMEOUT", 5.0)) 
+MILVUS_TIMEOUT = float(os.getenv("MILVUS_TIMEOUT", 5.0))
+
+# connection pool config
+MIN_CONNECTIONS = int(os.getenv("MIN_CONNECTIONS", 1))
+MAX_CONNECTIONS = int(os.getenv("MAX_CONNECTIONS", 20))
 
 class Config:
     # postgres config
@@ -41,8 +45,8 @@ class Config:
     REDIS_RETRY_DELAY = REDIS_RETRY_DELAY
 
     # connection pool config
-    MIN_CONNECTIONS = 1
-    MAX_CONNECTIONS = 20
+    MIN_CONNECTIONS = MIN_CONNECTIONS
+    MAX_CONNECTIONS = MAX_CONNECTIONS
 
     # milvus config
     MILVUS_HOST = MILVUS_HOST
