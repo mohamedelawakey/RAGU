@@ -39,6 +39,9 @@ class TextSplitter:
         if not text:
             return []
 
+        if not separators:
+            return [text[i:i+chunk_size] for i in range(0, len(text), max(1, chunk_size - chunk_overlap))]
+
         final_chunks = []
 
         separator = separators[-1]
@@ -97,7 +100,11 @@ class TextSplitter:
                     if current_chunk:
                         final_chunks.append(current_chunk.strip())
                         overlap_start = max(0, len(current_chunk) - chunk_overlap)
-                        current_chunk = current_chunk[overlap_start:] + separator + s
+                        rebuilt_chunk = current_chunk[overlap_start:] + separator + s
+                        if len(rebuilt_chunk) > max_chunk_size:
+                            current_chunk = s
+                        else:
+                            current_chunk = rebuilt_chunk
                     else:
                         current_chunk = s
 
