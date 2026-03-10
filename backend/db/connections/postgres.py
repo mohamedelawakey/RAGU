@@ -9,12 +9,10 @@ logger = get_logger("postgres.module")
 
 class PostgresDBConnection:
     _pool = None
-    _lock = None
+    _lock = asyncio.Lock()
 
     @classmethod
     async def init_pool(cls):
-        if cls._lock is None:
-            cls._lock = asyncio.Lock()
 
         if cls._pool is None:
             async with cls._lock:
@@ -30,14 +28,15 @@ class PostgresDBConnection:
                             max_size=Config.MAX_CONNECTIONS,
                         )
                         logger.info("Async PostgreSQL connection pool initialized")
-                    except Exception as e:
-                        logger.error(f"Error initializing Async PostgreSQL connection pool: {e}")
+                    except Exception:
+                        logger.exception("Error initializing Async PostgreSQL connection pool")
                         raise
 
     @classmethod
     async def close_pool(cls):
         if cls._pool:
             await cls._pool.close()
+            cls._pool = None
             logger.info("Async PostgreSQL connection pool closed")
 
     @classmethod
