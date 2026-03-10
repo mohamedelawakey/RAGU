@@ -1,5 +1,5 @@
 from backend.db.models.milvus_collections import get_chunk_schema
-from backend.db.milvus import AsyncMilvusDBConnection
+from backend.db.connections.milvus import AsyncMilvusDBConnection
 from pymilvus import Collection, utility
 import asyncio
 import sys
