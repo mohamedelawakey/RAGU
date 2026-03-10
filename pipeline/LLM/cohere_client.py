@@ -20,13 +20,13 @@ class CohereClient:
         stop=stop_after_attempt(Config.STOP_RETRY),
         wait=wait_exponential(
             multiplier=Config.MULTIPLIER,
-            min=Config.MIN,
-            max=Config.MAX
+            min=Config.RETRY_MIN_WAIT,
+            max=Config.RETRY_MAX_WAIT
         ),
         retry=retry_if_exception_type(Exception),
         reraise=True
     )
-    def cohereChat(prompt: str):
+    def cohere_chat(prompt: str):
         try:
             api_key = os.getenv("COHERE_API_KEY")
             if not api_key:
@@ -53,6 +53,6 @@ class CohereClient:
 
             logger.info("Stream completed successfully.")
 
-        except Exception as e:
-            logger.error(f"Critical error in CohereClient.cohereChat after retries: {str(e)}")
-            return
+        except Exception:
+            logger.exception("Critical error in CohereClient.cohere_chat")
+            raise
