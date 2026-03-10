@@ -11,7 +11,7 @@ class Embedding:
     def embed(chunks: List[str]) -> Optional[List[List[float]]]:
         if not chunks:
             logger.warning("No chunks provided for embedding.")
-            return []
+            return None
 
         _model = LoadModel.get_model()
         if _model is None:
@@ -32,5 +32,5 @@ class Embedding:
             return embeddings.tolist()
 
         except Exception as e:
-            logger.error(f"Critical error during embedding process: {e}")
+            logger.exception(f"Critical error during embedding process: {e}")
             return None
