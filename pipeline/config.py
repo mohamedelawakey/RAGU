@@ -1,6 +1,7 @@
 class Config:
     # embeddings
-    EMBEDDING_MODEL = 'BAAI/bge-m3'  # 1024 dim
+    EMBEDDING_MODEL = 'BAAI/bge-m3'
+    EMBEDDING_DIM = 1024
     BATCH_SIZE = 32
 
     # cleaning
@@ -11,7 +12,7 @@ class Config:
     CHUNK_SIZE = 1000
     MAX_CHUNK_SIZE = 8000
     CHUNK_OVERLAP = 200
-    SEPARATORS = ["\n\n", "\n", ". ", "؟ ", "! ", "، ", "؛ ", " "]
+    SEPARATORS = ("\n\n", "\n", ". ", "؟ ", "! ", "، ", "؛ ", " ")
 
     # cohere client
     COHERE_MODEL_NAME = "command-a-03-2025"
@@ -19,5 +20,5 @@ class Config:
     # retry configurations
     STOP_RETRY = 3
     MULTIPLIER = 1
-    MIN = 2
-    MAX = 10
+    RETRY_MIN_WAIT = 2
+    RETRY_MAX_WAIT = 10
