@@ -3,6 +3,7 @@ from backend.config import Config
 from pymilvus import connections
 from typing import Optional
 from . import get_logger
+import threading
 import asyncio
 
 logger = get_logger("milvus.module")
@@ -10,6 +11,7 @@ logger = get_logger("milvus.module")
 
 class AsyncMilvusDBConnection:
     _lock: Optional[asyncio.Lock] = None
+    _init_lock = threading.Lock()
     _connected: bool = False
 
     @staticmethod
@@ -17,8 +19,9 @@ class AsyncMilvusDBConnection:
         alias: str = Config.MILVUS_ALIAS,
         timeout: float = Config.MILVUS_TIMEOUT
     ) -> bool:
-        if AsyncMilvusDBConnection._lock is None:
-            AsyncMilvusDBConnection._lock = asyncio.Lock()
+        with AsyncMilvusDBConnection._init_lock:
+            if AsyncMilvusDBConnection._lock is None:
+                AsyncMilvusDBConnection._lock = asyncio.Lock()
 
         if AsyncMilvusDBConnection._connected or connections.has_connection(alias):
             return True
@@ -29,11 +32,15 @@ class AsyncMilvusDBConnection:
                 return True
 
             try:
-                connections.connect(
-                    alias=alias,
-                    host=Config.MILVUS_HOST,
-                    port=Config.MILVUS_PORT,
-                    timeout=timeout
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    None,
+                    lambda: connections.connect(
+                        alias=alias,
+                        host=Config.MILVUS_HOST,
+                        port=Config.MILVUS_PORT,
+                        timeout=timeout
+                    )
                 )
 
                 AsyncMilvusDBConnection._connected = True
@@ -42,9 +49,9 @@ class AsyncMilvusDBConnection:
                 return True
 
             except MilvusException as e:
-                logger.error(f"MilvusException during connection: {e}")
-                raise ConnectionError(f"Failed to connect to Milvus: {e}")
+                logger.exception("MilvusException during connection")
+                raise ConnectionError(f"Failed to connect to Milvus: {e}") from e
 
             except Exception as e:
-                logger.error(f"Unexpected error connecting to Milvus: {e}", exc_info=True)
-                raise ConnectionError(f"Unexpected error connecting to Milvus: {e}")
+                logger.exception("Unexpected error connecting to Milvus")
+                raise ConnectionError(f"Unexpected error connecting to Milvus: {e}") from e
