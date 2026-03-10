@@ -1,0 +1,6 @@
+asyncpg==0.31.0
+asyncio==4.0.0
+redis==7.3.0
+pymilvus==2.6.9
+SQLAlchemy==2.0.48
+alembic==1.18.4
