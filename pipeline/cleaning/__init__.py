@@ -4,6 +4,6 @@ from .cleaner import Cleaner
 
 __all__ = [
     "Cleaner",
-    "get_logger",
-    "Config"
+    "Config",
+    "get_logger"
 ]
