@@ -1,13 +1,14 @@
 from . import get_logger, Config
 import re
 import unicodedata
+from typing import Optional
 
 logger = get_logger("cleaner.module")
 
 
 class Cleaner:
     @staticmethod
-    def clean(text: str) -> str:
+    def clean(text: Optional[str]) -> str:
         if not text:
             return ""
 
