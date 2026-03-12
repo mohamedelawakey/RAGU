@@ -1,7 +1,7 @@
 from backend.db.connections.postgres import PostgresDBConnection
 from typing import List, Dict, Any, Optional
-from . import get_logger
-from . import Config
+from pipeline import get_logger
+from pipeline import Config
 
 logger = get_logger("bm25_search.module")
 
