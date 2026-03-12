@@ -11,6 +11,7 @@ logger = get_logger("semantic_search.module")
 
 class SemanticSearch:
     _loaded_collections: ClassVar[Set[str]] = set()
+    _load_locks: ClassVar[Dict[str, asyncio.Lock]] = {}
 
     def __init__(
         self,
@@ -59,10 +60,14 @@ class SemanticSearch:
 
             collection = await self._run_in_executor(Collection, self.collection_name, using=self.alias)
 
-            if self.collection_name not in SemanticSearch._loaded_collections:
-                logger.info(f"Loading collection '{self.collection_name}' into memory (first time)...")
-                await self._run_in_executor(collection.load)
-                SemanticSearch._loaded_collections.add(self.collection_name)
+            if self.collection_name not in SemanticSearch._load_locks:
+                SemanticSearch._load_locks[self.collection_name] = asyncio.Lock()
+
+            async with SemanticSearch._load_locks[self.collection_name]:
+                if self.collection_name not in SemanticSearch._loaded_collections:
+                    logger.info(f"Loading collection '{self.collection_name}' into memory (first time)...")
+                    await self._run_in_executor(collection.load)
+                    SemanticSearch._loaded_collections.add(self.collection_name)
 
             logger.info("Executing search query in Milvus...")
             results = await self._run_in_executor(
@@ -84,6 +89,9 @@ class SemanticSearch:
 
             for hit in search_hits:
                 chunk_id = hit.entity.get('chunk_id')
+                if chunk_id is None:
+                    logger.warning("Skipping Milvus hit with missing chunk_id.")
+                    continue
                 chunk_ids.append(chunk_id)
                 milvus_scores[chunk_id] = hit.distance
 
