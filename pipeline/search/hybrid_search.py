@@ -14,8 +14,8 @@ class HybridSearch:
         top_k: int = Config.HYBRID_SEARCH_TOP_K,
         rrf_k: int = Config.RRF_K
     ):
-        self.semantic_search = SemanticSearch()
-        self.bm25_search = BM25Search()
+        self.semantic_search = SemanticSearch(top_k=top_k)
+        self.bm25_search = BM25Search(top_k=top_k)
         self.top_k = top_k
         self.rrf_k = rrf_k
 
