@@ -24,7 +24,7 @@ class HybridSearch:
             logger.warning("Empty query provided for hybrid search.")
             return []
 
-        logger.info(f"Starting hybrid search (Semantic + BM25) for query: '{query}'")
+        logger.info(f"Starting hybrid search (Semantic + BM25) [query_length={len(query)}]")
 
         try:
             semantic_results_task = self.semantic_search.search(query)
@@ -35,9 +35,16 @@ class HybridSearch:
                 bm25_results_task
             )
 
-            if semantic_results is None: 
+            if semantic_results is None and bm25_results is None:
+                logger.error("Hybrid search failed: both Semantic and BM25 backends returned None.")
+                return None
+
+            if semantic_results is None:
+                logger.warning("Semantic search backend failed (returned None). Proceeding with BM25 results only.")
                 semantic_results = []
-            if bm25_results is None: 
+
+            if bm25_results is None:
+                logger.warning("BM25 search backend failed (returned None). Proceeding with Semantic results only.")
                 bm25_results = []
 
             rrf_scores: Dict[str, float] = {}
