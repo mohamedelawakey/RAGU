@@ -16,6 +16,10 @@ class TextSplitter:
         if not text or not text.strip():
             return []
 
+        text = Cleaner.clean(text)
+        if not text or not text.strip():
+            return []
+
         chunks = TextSplitter._recursive_split(
             text,
             Config.SEPARATORS,
