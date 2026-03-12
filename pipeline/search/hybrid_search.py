@@ -1,8 +1,8 @@
 from typing import List, Dict, Any, Optional
 from .semantic_search import SemanticSearch
 from .bm25_search import BM25Search
-from pipeline.config import Config
 from pipeline import get_logger
+from pipeline import Config
 import asyncio
 
 logger = get_logger("hybrid_search.module")
