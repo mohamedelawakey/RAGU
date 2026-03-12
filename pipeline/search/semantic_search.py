@@ -1,6 +1,6 @@
 from backend.db.connections.milvus import AsyncMilvusDBConnection
+from typing import ClassVar, List, Dict, Any, Optional, Set
 from pipeline.embeddings.embedding import Embedding
-from typing import List, Dict, Any, Optional
 from pymilvus import Collection, utility
 from pipeline import get_logger
 from pipeline import Config
@@ -10,7 +10,7 @@ logger = get_logger("semantic_search.module")
 
 
 class SemanticSearch:
-    _loaded_collections: set = set()
+    _loaded_collections: ClassVar[Set[str]] = set()
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class SemanticSearch:
                 logger.error(f"Milvus collection '{self.collection_name}' does not exist on alias '{self.alias}'.")
                 return None
 
-            collection = Collection(self.collection_name, using=self.alias)
+            collection = await self._run_in_executor(Collection, self.collection_name, using=self.alias)
 
             if self.collection_name not in SemanticSearch._loaded_collections:
                 logger.info(f"Loading collection '{self.collection_name}' into memory (first time)...")
