@@ -15,7 +15,7 @@ class BM25Search:
             logger.warning("Empty query provided for BM25 search.")
             return []
 
-        logger.info(f"Starting BM25 search for query: '{query}'")
+        logger.info(f"Starting BM25 search [query_length={len(query)}]")
 
         try:
             logger.info("Executing full-text search query in Postgres...")
