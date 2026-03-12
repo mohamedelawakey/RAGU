@@ -1,5 +1,6 @@
-from . import get_logger, Config
-from ..cleaning import Cleaner
+from pipeline.cleaning.cleaner import Cleaner
+from pipeline import get_logger
+from pipeline import Config
 
 logger = get_logger("text_splitter.module")
 
@@ -16,6 +17,8 @@ class TextSplitter:
             return []
 
         text = Cleaner.clean(text)
+        if not text or not text.strip():
+            return []
 
         chunks = TextSplitter._recursive_split(
             text,
