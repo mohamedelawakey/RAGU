@@ -10,6 +10,8 @@ logger = get_logger("semantic_search.module")
 
 
 class SemanticSearch:
+    _loaded_collections: set = set()
+
     def __init__(
         self,
         collection_name: str = Config.COLLECTION_NAME,
@@ -57,7 +59,10 @@ class SemanticSearch:
 
             collection = Collection(self.collection_name, using=self.alias)
 
-            await self._run_in_executor(collection.load)
+            if self.collection_name not in SemanticSearch._loaded_collections:
+                logger.info(f"Loading collection '{self.collection_name}' into memory (first time)...")
+                await self._run_in_executor(collection.load)
+                SemanticSearch._loaded_collections.add(self.collection_name)
 
             logger.info("Executing search query in Milvus...")
             results = await self._run_in_executor(
@@ -94,7 +99,9 @@ class SemanticSearch:
                     "score": milvus_scores.get(chunk_id, 0.0)
                 })
 
-            final_results.sort(key=lambda x: x['score'], reverse=True)
+            metric_type = str(self.search_params.get("metric_type", "")).upper()
+            higher_is_better = metric_type in {"IP", "COSINE"}
+            final_results.sort(key=lambda x: x["score"], reverse=higher_is_better)
             return final_results
 
         except Exception as e:
