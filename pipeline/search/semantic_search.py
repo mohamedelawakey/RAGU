@@ -13,10 +13,12 @@ class SemanticSearch:
     def __init__(
         self,
         collection_name: str = Config.COLLECTION_NAME,
-        top_k: int = Config.SEMANTIC_SEARCH_TOP_K
+        top_k: int = Config.SEMANTIC_SEARCH_TOP_K,
+        alias: str = Config.MILVUS_ALIAS
     ):
         self.collection_name = collection_name
         self.top_k = top_k
+        self.alias = alias
         self.search_params = {
             "metric_type": Config.SEARCH_PARAMS_METRIC_TYPE,
             "params": {
@@ -33,11 +35,11 @@ class SemanticSearch:
             logger.warning("Empty query provided for semantic search.")
             return []
 
-        logger.info(f"Starting semantic search for query: '{query}'")
+        logger.info(f"Starting semantic search [query_length={len(query)}]")
 
         try:
             logger.info("Generating embedding for the query...")
-            query_embedding = Embedding.embed([query])
+            query_embedding = await self._run_in_executor(Embedding.embed, [query])
 
             if not query_embedding or len(query_embedding) == 0:
                 logger.error("Failed to generate embedding for the search query.")
@@ -46,14 +48,14 @@ class SemanticSearch:
             vector_to_search = query_embedding[0]
 
             logger.info("Connecting to Milvus for vector search...")
-            await AsyncMilvusDBConnection.get_connection()
+            await AsyncMilvusDBConnection.get_connection(alias=self.alias)
 
-            exists = await self._run_in_executor(utility.has_collection, self.collection_name)
+            exists = await self._run_in_executor(utility.has_collection, self.collection_name, using=self.alias)
             if not exists:
-                logger.error(f"Milvus collection '{self.collection_name}' does not exist.")
+                logger.error(f"Milvus collection '{self.collection_name}' does not exist on alias '{self.alias}'.")
                 return None
 
-            collection = Collection(self.collection_name)
+            collection = Collection(self.collection_name, using=self.alias)
 
             await self._run_in_executor(collection.load)
 
