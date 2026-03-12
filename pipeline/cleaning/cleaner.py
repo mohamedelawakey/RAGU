@@ -1,7 +1,8 @@
-from . import get_logger, Config
-import re
-import unicodedata
+from pipeline import get_logger
+from pipeline import Config
 from typing import Optional
+import unicodedata
+import re
 
 logger = get_logger("cleaner.module")
 
