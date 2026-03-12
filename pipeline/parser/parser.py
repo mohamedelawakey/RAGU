@@ -1,8 +1,8 @@
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.datamodel.base_models import InputFormat
+from pipeline import get_logger
 from typing import Optional
-from . import get_logger
 import threading
 import os
 
