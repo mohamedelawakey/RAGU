@@ -2,8 +2,9 @@ from backend.db.connections.milvus import AsyncMilvusDBConnection
 from pipeline.embeddings.embedding import Embedding
 from typing import List, Dict, Any, Optional
 from pymilvus import Collection, utility
-from . import get_logger
-from . import Config
+from pipeline import get_logger
+from pipeline import Config
+import asyncio
 
 logger = get_logger("semantic_search.module")
 
@@ -23,6 +24,10 @@ class SemanticSearch:
             }
         }
 
+    async def _run_in_executor(self, func, *args, **kwargs):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
+
     async def search(self, query: str) -> Optional[List[Dict[str, Any]]]:
         if not query or not query.strip():
             logger.warning("Empty query provided for semantic search.")
@@ -30,29 +35,31 @@ class SemanticSearch:
 
         logger.info(f"Starting semantic search for query: '{query}'")
 
-        logger.info("Generating embedding for the query...")
-        query_embedding = Embedding.embed([query])
-
-        if not query_embedding or len(query_embedding) == 0:
-            logger.error("Failed to generate embedding for the search query.")
-            return None
-
-        vector_to_search = query_embedding[0]
-
         try:
+            logger.info("Generating embedding for the query...")
+            query_embedding = Embedding.embed([query])
+
+            if not query_embedding or len(query_embedding) == 0:
+                logger.error("Failed to generate embedding for the search query.")
+                return None
+
+            vector_to_search = query_embedding[0]
+
             logger.info("Connecting to Milvus for vector search...")
             await AsyncMilvusDBConnection.get_connection()
 
-            if not utility.has_collection(self.collection_name):
+            exists = await self._run_in_executor(utility.has_collection, self.collection_name)
+            if not exists:
                 logger.error(f"Milvus collection '{self.collection_name}' does not exist.")
                 return None
 
             collection = Collection(self.collection_name)
 
-            collection.load()
+            await self._run_in_executor(collection.load)
 
             logger.info("Executing search query in Milvus...")
-            results = collection.search(
+            results = await self._run_in_executor(
+                collection.search,
                 data=[vector_to_search],
                 anns_field="embedding",
                 param=self.search_params,
