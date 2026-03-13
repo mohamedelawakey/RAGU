@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
-from ..config import Config
-from .. import get_logger
+from pipeline import Config
+from pipeline import get_logger
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -11,10 +11,22 @@ import cohere
 import os
 
 logger = get_logger("cohere_llm.module")
+api_key = os.getenv("COHERE_API_KEY")
+
 load_dotenv()
 
 
 class CohereClient:
+    @staticmethod
+    def _stream_response(client: cohere.ClientV2, prompt: str):
+        response = client.chat_stream(
+            model=Config.COHERE_MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        for event in response:
+            if event.type == "content-delta":
+                yield event.delta.message.content.text
+
     @staticmethod
     @retry(
         stop=stop_after_attempt(Config.STOP_RETRY),
@@ -27,32 +39,15 @@ class CohereClient:
         reraise=True
     )
     def cohere_chat(prompt: str):
+        if not api_key:
+            logger.error("Cohere API KEY not found in environment variables.")
+            raise ValueError("COHERE_API_KEY is not set.")
+
+        client = cohere.ClientV2(api_key=api_key)
+        logger.info("Starting streaming request to Cohere (with retry policy)...")
+
         try:
-            api_key = os.getenv("COHERE_API_KEY")
-            if not api_key:
-                logger.error("Cohere API KEY not found in environment variables.")
-                return
-
-            client = cohere.ClientV2(api_key=api_key)
-
-            logger.info("Starting streaming request to Cohere (with retry policy)...")
-
-            response = client.chat_stream(
-                model=Config.COHERE_MODEL_NAME,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-            )
-
-            for event in response:
-                if event.type == "content-delta":
-                    yield event.delta.message.content.text
-
-            logger.info("Stream completed successfully.")
-
+            return CohereClient._stream_response(client, prompt)
         except Exception:
             logger.exception("Critical error in CohereClient.cohere_chat")
             raise
