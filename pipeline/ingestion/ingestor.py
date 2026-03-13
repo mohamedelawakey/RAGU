@@ -23,6 +23,12 @@ class DocumentIngestor:
             logger.error("Config.COLLECTION_NAME is missing or empty. Please set a valid Milvus collection name.")
             return False
 
+        logger.info("Verifying Milvus collection availability...")
+        await AsyncMilvusDBConnection.get_connection()
+        if not utility.has_collection(collection_name):
+            logger.error(f"Milvus collection '{collection_name}' does not exist. Please run setup first.")
+            return False
+
         logger.info("Extracting text from document...")
         text = DocumentExtractor.extract(filePath)
         if not text:
@@ -71,13 +77,7 @@ class DocumentIngestor:
                 )
                 logger.info(f"Successfully saved {len(chunks)} chunks to Postgres under Document ID: {document_id}")
 
-            logger.info("Connecting to Milvus to store embeddings...")
-            await AsyncMilvusDBConnection.get_connection()
-
-            if not utility.has_collection(collection_name):
-                logger.error(f"Milvus collection '{collection_name}' does not exist. Please run setup.")
-                return False
-
+            logger.info("Inserting embeddings into Milvus...")
             collection = Collection(collection_name)
 
             document_ids_for_milvus = [document_id] * len(chunks)
