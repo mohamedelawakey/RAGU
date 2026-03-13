@@ -67,3 +67,10 @@ class Config:
     # Hybrid Search Configurations
     HYBRID_SEARCH_TOP_K = 5
     RRF_K = 60
+
+    # Retriever Configurations
+    FETCH_CHUNKS_BY_IDS = """
+        SELECT id, text_content
+        FROM document_chunks
+        WHERE id = ANY($1::text[])
+    """
