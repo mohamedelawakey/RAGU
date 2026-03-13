@@ -1,7 +1,7 @@
 from typing import List, Optional
 from .load_models import LoadModel
-from ..config import Config
-from .. import get_logger
+from pipeline import Config
+from pipeline import get_logger
 
 logger = get_logger("embedding.module")
 
