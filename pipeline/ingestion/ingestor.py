@@ -5,8 +5,8 @@ from pipeline.embeddings.embedding import Embedding
 from pipeline.chunking.chunker import TextSplitter
 from pipeline.cleaning.cleaner import Cleaner
 from pymilvus import Collection, utility
-from pipeline.config import Config
 from pipeline import get_logger
+from pipeline import Config
 import uuid
 import os
 
@@ -68,7 +68,7 @@ class DocumentIngestor:
 
             logger.info("Connecting to Milvus to store embeddings...")
             await AsyncMilvusDBConnection.get_connection()
-            collection_name = "edu_chunks"
+            collection_name = Config.COLLECTION_NAME
 
             if not utility.has_collection(collection_name):
                 logger.error(f"Milvus collection '{collection_name}' does not exist. Please run setup.")
