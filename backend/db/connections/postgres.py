@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
+from utils.logger import get_logger
 from backend.config import Config
-from . import get_logger
 import asyncpg
 import asyncio
 

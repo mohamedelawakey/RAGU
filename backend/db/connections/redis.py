@@ -1,7 +1,7 @@
 from redis.exceptions import RedisError, ConnectionError as RedisConnectionError
 from redis.asyncio import Redis, ConnectionPool
+from utils.logger import get_logger
 from backend.config import Config
-from . import get_logger
 import asyncio
 
 logger = get_logger("redis.module")

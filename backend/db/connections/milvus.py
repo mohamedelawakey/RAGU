@@ -1,8 +1,8 @@
 from pymilvus.exceptions import MilvusException
+from utils.logger import get_logger
 from backend.config import Config
 from pymilvus import connections
 from typing import Optional
-from . import get_logger
 import threading
 import asyncio
 
