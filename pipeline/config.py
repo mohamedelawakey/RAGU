@@ -74,3 +74,7 @@ class Config:
         FROM document_chunks
         WHERE id = ANY($1::text[])
     """
+
+    # Reranker Configurations
+    RERANKER_MODEL = "rerank-v3.5"
+    RERANKER_TOP_N = 5
