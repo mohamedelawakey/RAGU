@@ -6,7 +6,7 @@ from .cleaning.cleaner import Cleaner
 from .embeddings import Embedding
 from .search import HybridSearch
 from .LLM import CohereClient
-
+from .reranker import Reranker
 
 __all__ = [
     "DocumentExtractor",
@@ -16,4 +16,5 @@ __all__ = [
     "CohereClient",
     "Embedding",
     "Cleaner",
+    "Reranker",
 ]
