@@ -1,6 +1,6 @@
 from .load_models import LoadModel
 from typing import List, Optional
-from pipeline import get_logger
+from utils.logger import get_logger
 
 logger = get_logger("query_embedding.module")
 

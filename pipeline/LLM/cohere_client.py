@@ -1,6 +1,6 @@
+from utils.logger import get_logger
+from pipeline.config import Config
 from dotenv import load_dotenv
-from pipeline import Config
-from pipeline import get_logger
 from tenacity import (
     Retrying,
     stop_after_attempt,

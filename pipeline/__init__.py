@@ -1,7 +1,3 @@
-# utilities first
-from utils.logger import get_logger
-from .config import Config
-
 # pipeline components
 from .ingestion.ingestor import DocumentIngestor
 from .parser.parser import DocumentExtractor
@@ -18,8 +14,6 @@ __all__ = [
     "TextSplitter",
     "HybridSearch",
     "CohereClient",
-    "get_logger",
     "Embedding",
     "Cleaner",
-    "Config",
 ]

@@ -1,5 +1,5 @@
-from pipeline import get_logger
-from pipeline import Config
+from utils.logger import get_logger
+from pipeline.config import Config
 from typing import Optional
 import unicodedata
 import re
