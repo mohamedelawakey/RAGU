@@ -15,12 +15,24 @@ logger = get_logger("ingestion.module")
 
 class DocumentIngestor:
     @staticmethod
-    async def ingest_document(filePath: str) -> bool:
-        logger.info(f"Starting ingestion pipeline for document: {filePath}")
+    async def ingest_document(filePath: str, user_id: str) -> bool:
+        logger.info(f"Starting ingestion pipeline for document: {filePath} [user_id={user_id}]")
 
         collection_name = (Config.COLLECTION_NAME or "").strip()
         if not collection_name:
             logger.error("Config.COLLECTION_NAME is missing or empty. Please set a valid Milvus collection name.")
+            return False
+
+        filename = os.path.basename(filePath)
+
+        try:
+            logger.info(f"Registering document in Postgres as 'processing' for user {user_id}...")
+            async with PostgresDBConnection.get_db_connection() as conn:
+                document_id = await conn.fetchval(
+                    Config.INSERT_DOCUMENT_NODE, filename, filePath, user_id
+                )
+        except Exception:
+            logger.exception(f"Failed to register document '{filename}' in Postgres.")
             return False
 
         logger.info("Verifying Milvus collection availability...")
@@ -53,15 +65,9 @@ class DocumentIngestor:
             logger.error("Failed to generate embeddings or mismatch in chunk/embedding count.")
             return False
 
-        filename = os.path.basename(filePath)
-        chunk_ids = [str(uuid.uuid4()) for _ in range(len(chunks))]
-
         try:
-            logger.info("Saving document metadata and text chunks to PostgreSQL...")
+            logger.info("Saving text chunks to PostgreSQL...")
             async with PostgresDBConnection.get_db_connection() as conn:
-                document_id = await conn.fetchval(
-                    Config.INSERT_DOCUMENT_NODE, filename, filePath
-                )
 
                 chunk_records = []
                 for i in range(len(chunks)):
@@ -81,8 +87,11 @@ class DocumentIngestor:
             collection = Collection(collection_name)
 
             document_ids_for_milvus = [document_id] * len(chunks)
+            user_ids_for_milvus = [user_id] * len(chunks)
+            
             milvus_data = [
                 chunk_ids,
+                user_ids_for_milvus,
                 document_ids_for_milvus,
                 embeddings
             ]
@@ -91,8 +100,25 @@ class DocumentIngestor:
             collection.flush()
             logger.info(f"Successfully inserted {insert_result.insert_count} vectors into Milvus (Collection: {collection_name}).")
 
+            async with PostgresDBConnection.get_db_connection() as conn:
+                await conn.execute(
+                    Config.UPDATE_DOCUMENT_STATUS,
+                    "completed",
+                    document_id
+                )
+                logger.info(f"Document ID {document_id} marked as 'completed'.")
+
             return True
 
         except Exception:
             logger.exception(f"Critical error during database ingestion for '{filePath}'")
+            try:
+                async with PostgresDBConnection.get_db_connection() as conn:
+                    await conn.execute(
+                        Config.UPDATE_DOCUMENT_STATUS,
+                        "failed",
+                        document_id
+                    )
+            except Exception:
+                logger.error(f"Failed to update document {document_id} status to 'failed'.")
             return False
