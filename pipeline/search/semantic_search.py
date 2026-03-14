@@ -33,7 +33,7 @@ class SemanticSearch:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
 
-    async def search(self, query: str) -> Optional[List[Dict[str, Any]]]:
+    async def search(self, query: str, user_id: str) -> Optional[List[Dict[str, Any]]]:
         if not query or not query.strip():
             logger.warning("Empty query provided for semantic search.")
             return []
@@ -76,6 +76,7 @@ class SemanticSearch:
                 anns_field="embedding",
                 param=self.search_params,
                 limit=self.top_k,
+                expr=f"user_id == '{user_id}'",
                 output_fields=["chunk_id", "document_id"]
             )
 

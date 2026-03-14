@@ -19,7 +19,7 @@ class HybridSearch:
         self.top_k = top_k
         self.rrf_k = rrf_k
 
-    async def search(self, query: str) -> Optional[List[Dict[str, Any]]]:
+    async def search(self, query: str, user_id: str) -> Optional[List[Dict[str, Any]]]:
         if not query or not query.strip():
             logger.warning("Empty query provided for hybrid search.")
             return []
@@ -27,8 +27,8 @@ class HybridSearch:
         logger.info(f"Starting hybrid search (Semantic + BM25) [query_length={len(query)}]")
 
         try:
-            semantic_results_task = self.semantic_search.search(query)
-            bm25_results_task = self.bm25_search.search(query)
+            semantic_results_task = self.semantic_search.search(query, user_id)
+            bm25_results_task = self.bm25_search.search(query, user_id)
 
             semantic_results, bm25_results = await asyncio.gather(
                 semantic_results_task,

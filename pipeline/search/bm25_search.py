@@ -10,7 +10,7 @@ class BM25Search:
     def __init__(self, top_k: int = Config.BM25_TOP_K):
         self.top_k = top_k
 
-    async def search(self, query: str) -> Optional[List[Dict[str, Any]]]:
+    async def search(self, query: str, user_id: str) -> Optional[List[Dict[str, Any]]]:
         if not query or not query.strip():
             logger.warning("Empty query provided for BM25 search.")
             return []
@@ -23,7 +23,7 @@ class BM25Search:
             async with PostgresDBConnection.get_db_connection() as conn:
                 sql_query = Config.BM25_QUERY
 
-                rows = await conn.fetch(sql_query, query, self.top_k)
+                rows = await conn.fetch(sql_query, query, self.top_k, user_id)
 
                 if not rows:
                     logger.info("No lexical matches found in Postgres.")
