@@ -16,14 +16,15 @@ class Retriever:
 
     async def retrieve(
         self,
-        query: str
+        query: str,
+        user_id: str
     ) -> Optional[List[Dict[str, Any]]]:
         if not query or not query.strip():
             logger.warning("Empty query provided to Retriever.")
             return []
 
-        logger.info(f"Retriever: running hybrid search [query_length={len(query)}]")
-        search_results = await self.hybrid_search.search(query)
+        logger.info(f"Retriever: running hybrid search [query_length={len(query)}, user_id={user_id}]")
+        search_results = await self.hybrid_search.search(query, user_id)
 
         if search_results is None:
             logger.error("Retriever: hybrid search returned None (backend failure).")
