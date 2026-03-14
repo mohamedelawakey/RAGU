@@ -11,6 +11,12 @@ def get_chunk_schema() -> CollectionSchema:
         auto_id=False
     )
 
+    user_id = FieldSchema(
+        name="user_id",
+        dtype=DataType.VARCHAR,
+        max_length=255
+    )
+
     document_id = FieldSchema(
         name="document_id",
         dtype=DataType.INT64
@@ -23,7 +29,7 @@ def get_chunk_schema() -> CollectionSchema:
     )
 
     schema = CollectionSchema(
-        fields=[chunk_id, document_id, embedding],
+        fields=[chunk_id, user_id, document_id, embedding],
         description="Educational Document Embeddings for RAG (Text stored in PG)"
     )
 

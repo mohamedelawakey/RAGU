@@ -13,6 +13,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True)
+    user_id = Column(String(255), nullable=False, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     upload_date = Column(DateTime(timezone=True), server_default=func.now())
