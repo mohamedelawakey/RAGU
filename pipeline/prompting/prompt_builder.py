@@ -1,4 +1,4 @@
-from . import get_logger
+from utils.logger import get_logger
 from .prompts import Prompts
 
 logger = get_logger("prompt_builder.module")

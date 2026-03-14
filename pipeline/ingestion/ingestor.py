@@ -5,8 +5,8 @@ from pipeline.embeddings.embedding import Embedding
 from pipeline.chunking.chunker import TextSplitter
 from pipeline.cleaning.cleaner import Cleaner
 from pymilvus import Collection, utility
-from pipeline import get_logger
-from pipeline import Config
+from utils.logger import get_logger
+from pipeline.config import Config
 import uuid
 import os
 
