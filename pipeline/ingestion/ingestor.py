@@ -67,6 +67,7 @@ class DocumentIngestor:
 
         try:
             logger.info("Saving text chunks to PostgreSQL...")
+            chunk_ids = [str(uuid.uuid4()) for _ in range(len(chunks))]
             async with PostgresDBConnection.get_db_connection() as conn:
 
                 chunk_records = []
