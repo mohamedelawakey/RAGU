@@ -2,8 +2,8 @@ from backend.db.connections.milvus import AsyncMilvusDBConnection
 from typing import ClassVar, List, Dict, Any, Optional, Set
 from pipeline.embeddings.embedding import Embedding
 from pymilvus import Collection, utility
-from pipeline import get_logger
-from pipeline import Config
+from utils.logger import get_logger
+from pipeline.config import Config
 import asyncio
 
 logger = get_logger("semantic_search.module")
