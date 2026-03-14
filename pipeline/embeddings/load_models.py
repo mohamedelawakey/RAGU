@@ -1,6 +1,6 @@
 from sentence_transformers import SentenceTransformer
-from pipeline import get_logger
-from pipeline import Config
+from utils.logger import get_logger
+from pipeline.config import Config
 import threading
 
 logger = get_logger("model_loading.module")

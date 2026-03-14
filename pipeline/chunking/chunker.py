@@ -1,6 +1,6 @@
 from pipeline.cleaning.cleaner import Cleaner
-from pipeline import get_logger
-from pipeline import Config
+from utils.logger import get_logger
+from pipeline.config import Config
 
 logger = get_logger("text_splitter.module")
 
