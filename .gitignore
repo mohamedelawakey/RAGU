@@ -8,9 +8,7 @@ __pycache__/
 
 # some files
 .RAGU/
-test_e2e.py
 FUTURE_ROADMAP.md
-
 
 # Distribution / packaging
 .Python
