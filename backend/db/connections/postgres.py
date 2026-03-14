@@ -1,8 +1,8 @@
-import asyncpg
-import asyncio
-from . import get_logger
 from contextlib import asynccontextmanager
 from backend.config import Config
+from . import get_logger
+import asyncpg
+import asyncio
 
 logger = get_logger("postgres.module")
 
