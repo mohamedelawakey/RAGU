@@ -56,7 +56,8 @@ class RAGPipeline:
 
         logger.info("RAGPipeline: [4/4] Streaming LLM response...")
         try:
-            return CohereClient.cohere_chat(prompt)
+            import asyncio
+            return await asyncio.to_thread(CohereClient.cohere_chat, prompt)
         except Exception:
             logger.exception("RAGPipeline: CohereClient failed to generate response.")
             return None
