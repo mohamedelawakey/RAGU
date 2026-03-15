@@ -23,11 +23,18 @@ class Config:
     RETRY_MIN_WAIT = 2
     RETRY_MAX_WAIT = 10
 
-    # Insert Document Node into Postgres
+    # Insert Document Node into Postgres (Initial state: processing)
     INSERT_DOCUMENT_NODE = """
-        INSERT INTO documents (filename, file_path, status)
-        VALUES ($1, $2, 'completed')
+        INSERT INTO documents (filename, file_path, status, user_id)
+        VALUES ($1, $2, 'processing', $3)
         RETURNING id
+    """
+
+    # Update Document Node status to completed
+    UPDATE_DOCUMENT_STATUS = """
+        UPDATE documents
+        SET status = $1
+        WHERE id = $2
     """
 
     # insert chunks into Postgres
@@ -49,10 +56,14 @@ class Config:
                 similarity(c.text_content, $1) * 0.3
             ) as rank_score
         FROM document_chunks c
+        JOIN documents d ON c.document_id = d.id
         CROSS JOIN search_query sq
-        WHERE 
-            to_tsvector('simple', c.text_content) @@ sq.q
-            OR c.text_content % $1
+        WHERE
+            d.user_id = $3
+            AND (
+                to_tsvector('simple', c.text_content) @@ sq.q
+                OR c.text_content % $1
+            )
         ORDER BY rank_score DESC
         LIMIT $2
     """
