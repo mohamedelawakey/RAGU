@@ -1,4 +1,4 @@
-from .rag_pipeline import RAGPipeline
+from .orchestrator import RAGPipeline
 
 __all__ = [
     "RAGPipeline"
