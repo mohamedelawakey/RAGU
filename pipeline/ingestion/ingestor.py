@@ -21,7 +21,7 @@ class DocumentIngestor:
         collection_name = (Config.COLLECTION_NAME or "").strip()
         if not collection_name:
             logger.error("Config.COLLECTION_NAME is missing or empty. Please set a valid Milvus collection name.")
-            return False
+            raise ValueError("Config.COLLECTION_NAME is missing or empty.")
 
         filename = os.path.basename(filePath)
 
@@ -31,39 +31,39 @@ class DocumentIngestor:
                 document_id = await conn.fetchval(
                     Config.INSERT_DOCUMENT_NODE, filename, filePath, user_id
                 )
-        except Exception:
+        except Exception as e:
             logger.exception(f"Failed to register document '{filename}' in Postgres.")
-            return False
+            raise RuntimeError(f"Database error while registering document: {e}")
 
         logger.info("Verifying Milvus collection availability...")
         await AsyncMilvusDBConnection.get_connection()
         if not utility.has_collection(collection_name):
             logger.error(f"Milvus collection '{collection_name}' does not exist. Please run setup first.")
-            return False
+            raise RuntimeError(f"Milvus collection '{collection_name}' does not exist.")
 
         logger.info("Extracting text from document...")
         text = DocumentExtractor.extract(filePath)
         if not text:
             logger.error(f"Failed to extract text from {filePath}")
-            return False
+            raise ValueError(f"No text extracted from document '{filePath}'")
 
         logger.info("Cleaning extracted text...")
         text = Cleaner.clean(text)
         if not text:
             logger.error(f"Text became empty after cleaning {filePath}")
-            return False
+            raise ValueError("Text became empty after cleaning")
 
         logger.info("Chunking extracted text...")
         chunks = TextSplitter.text_split(text)
         if not chunks:
             logger.error(f"Failed to generate chunks for {filePath}")
-            return False
+            raise RuntimeError("Document chunking failed")
 
         logger.info(f"Generating embeddings for {len(chunks)} chunks...")
         embeddings = Embedding.embed(chunks)
         if not embeddings or len(embeddings) != len(chunks):
             logger.error("Failed to generate embeddings or mismatch in chunk/embedding count.")
-            return False
+            raise RuntimeError("Document embedding failed")
 
         try:
             logger.info("Saving text chunks to PostgreSQL...")
@@ -89,7 +89,7 @@ class DocumentIngestor:
 
             document_ids_for_milvus = [document_id] * len(chunks)
             user_ids_for_milvus = [user_id] * len(chunks)
-            
+
             milvus_data = [
                 chunk_ids,
                 user_ids_for_milvus,
@@ -111,7 +111,7 @@ class DocumentIngestor:
 
             return True
 
-        except Exception:
+        except Exception as e:
             logger.exception(f"Critical error during database ingestion for '{filePath}'")
             try:
                 async with PostgresDBConnection.get_db_connection() as conn:
@@ -122,4 +122,4 @@ class DocumentIngestor:
                     )
             except Exception:
                 logger.error(f"Failed to update document {document_id} status to 'failed'.")
-            return False
+            raise RuntimeError(f"Critical ingestion error: {e}")
