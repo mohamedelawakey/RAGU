@@ -15,10 +15,10 @@ logger = get_logger("cohere_llm.module")
 
 class CohereClient:
     @staticmethod
-    def cohere_chat(prompt: str):
+    def cohere_chat(messages: list):
         load_dotenv()
         api_key = os.getenv("COHERE_API_KEY")
-        
+
         if not api_key:
             logger.error("Cohere API KEY not found in environment variables.")
             raise ValueError("COHERE_API_KEY is not set.")
@@ -39,16 +39,16 @@ class CohereClient:
                 with attempt:
                     logger.info(f"Starting Cohere stream (Attempt {attempt.retry_state.attempt_number})...")
                     client = cohere.ClientV2(api_key=api_key)
-                    
+
                     response = client.chat_stream(
                         model=Config.COHERE_MODEL_NAME,
-                        messages=[{"role": "user", "content": prompt}]
+                        messages=messages
                     )
-                    
+
                     for event in response:
                         if event.type == "content-delta":
                             yield event.delta.message.content.text
-                    
+
                     logger.info("Stream completed successfully.")
 
         try:
