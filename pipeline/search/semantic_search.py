@@ -1,6 +1,6 @@
 from backend.db.connections.milvus import AsyncMilvusDBConnection
 from typing import ClassVar, List, Dict, Any, Optional, Set
-from pipeline.embeddings.embedding import Embedding
+from pipeline.embeddings.query_embedding import QueryEmbedding
 from pymilvus import Collection, utility
 from utils.logger import get_logger
 from pipeline.config import Config
@@ -42,13 +42,13 @@ class SemanticSearch:
 
         try:
             logger.info("Generating embedding for the query...")
-            query_embedding = await self._run_in_executor(Embedding.embed, [query])
+            query_embedding_vector = await self._run_in_executor(QueryEmbedding.embed_query, query)
 
-            if not query_embedding or len(query_embedding) == 0:
+            if not query_embedding_vector or len(query_embedding_vector) == 0:
                 logger.error("Failed to generate embedding for the search query.")
                 return None
 
-            vector_to_search = query_embedding[0]
+            vector_to_search = query_embedding_vector
 
             logger.info("Connecting to Milvus for vector search...")
             await AsyncMilvusDBConnection.get_connection(alias=self.alias)
