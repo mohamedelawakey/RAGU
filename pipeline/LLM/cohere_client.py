@@ -19,7 +19,7 @@ class CohereClient:
             raise ValueError("COHERE_API_KEY is not set.")
 
         client = cohere.ClientV2(api_key=api_key)
-        
+
         for attempt in range(1, Config.STOP_RETRY + 1):
             events_yielded = 0
             try:
@@ -46,7 +46,7 @@ class CohereClient:
                     if attempt == Config.STOP_RETRY:
                         logger.error("Final failure in CohereClient.cohere_chat after retries.")
                         raise
-                    
+
                     wait_time = min(
                         Config.RETRY_MAX_WAIT,
                         (Config.MULTIPLIER ** attempt) * Config.RETRY_MIN_WAIT
