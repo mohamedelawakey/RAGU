@@ -34,5 +34,7 @@ echo "Installing/Updating dependencies..."
 pip install --upgrade pip
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt 
+pip install -r backend/requirements.txt
+pip install pytest pytest-asyncio
 
 echo "Setup completed!"
