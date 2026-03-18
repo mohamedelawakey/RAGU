@@ -3,7 +3,7 @@ import os
 import asyncio
 from pipeline.ingestion.ingestor import DocumentIngestor
 from pipeline.retrieval.retriever import Retriever
-from pipeline.orchestrator.rag_pipeline import RAGPipeline
+from pipeline.orchestrator.orchestrator import RAGPipeline
 from backend.db.connections.postgres import PostgresDBConnection
 from pymilvus import utility
 import uuid
@@ -17,6 +17,7 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.mark.asyncio
 class TestEndToEndPipeline:
@@ -37,7 +38,16 @@ class TestEndToEndPipeline:
             # 2. Ingest the document
             # Note: This will actually extract, clean, chunk, embed, and store in DBs
             # If Milvus collection doesn't exist, this will fail. Run setup.py first.
-            success = await DocumentIngestor.ingest_document(test_file_path, test_user_id)
+            from pipeline.config import Config
+
+            # Since Ingestor no longer registers the file, register it manually for testing.
+            filename = os.path.basename(test_file_path)
+            async with PostgresDBConnection.get_db_connection() as conn:
+                document_id = await conn.fetchval(
+                    Config.INSERT_DOCUMENT_NODE, filename, test_file_path, test_user_id
+                )
+
+            success = await DocumentIngestor.ingest_document(test_file_path, test_user_id, document_id)
             assert success is True
 
             # 3. Test Retrieval
