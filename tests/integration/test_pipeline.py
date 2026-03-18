@@ -39,14 +39,14 @@ class TestEndToEndPipeline:
             # Note: This will actually extract, clean, chunk, embed, and store in DBs
             # If Milvus collection doesn't exist, this will fail. Run setup.py first.
             from pipeline.config import Config
-            
+
             # Since Ingestor no longer registers the file, register it manually for testing.
             filename = os.path.basename(test_file_path)
             async with PostgresDBConnection.get_db_connection() as conn:
                 document_id = await conn.fetchval(
                     Config.INSERT_DOCUMENT_NODE, filename, test_file_path, test_user_id
                 )
-                
+
             success = await DocumentIngestor.ingest_document(test_file_path, test_user_id, document_id)
             assert success is True
 
