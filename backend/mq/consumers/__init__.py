@@ -1,4 +1,4 @@
-from .consumer import IngestionConsumer
+from .ingestion_consumer import IngestionConsumer
 
 
 __all__ = [
