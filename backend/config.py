@@ -28,6 +28,18 @@ MILVUS_TIMEOUT = float(os.getenv("MILVUS_TIMEOUT", 5.0))
 MIN_CONNECTIONS = int(os.getenv("MIN_CONNECTIONS", 1))
 MAX_CONNECTIONS = int(os.getenv("MAX_CONNECTIONS", 20))
 
+# rabbitmq config
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
+RABBITMQ_QUEUE_NAME = os.getenv("RABBITMQ_QUEUE_NAME", "document_ingestion_queue")
+
+# postgres queries
+UPDATE_DOCUMENT_STATUS = """
+    UPDATE documents
+    SET status = $1
+    WHERE id = $2
+"""
+
+
 class Config:
     # postgres config
     DB_NAME = DB_NAME
@@ -53,3 +65,10 @@ class Config:
     MILVUS_PORT = MILVUS_PORT
     MILVUS_ALIAS = MILVUS_ALIAS
     MILVUS_TIMEOUT = MILVUS_TIMEOUT
+
+    # rabbitmq config
+    RABBITMQ_URL = RABBITMQ_URL
+    RABBITMQ_QUEUE_NAME = RABBITMQ_QUEUE_NAME
+
+    # postgres queries
+    UPDATE_DOCUMENT_STATUS = UPDATE_DOCUMENT_STATUS
