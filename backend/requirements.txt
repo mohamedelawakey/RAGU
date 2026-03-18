@@ -4,3 +4,4 @@ redis==7.3.0
 pymilvus==2.6.9
 SQLAlchemy==2.0.48
 alembic==1.18.4
+aio-pika>=9.6.1
