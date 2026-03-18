@@ -1,4 +1,4 @@
-from .producer import IngestionProducer
+from .ingestion_producer import IngestionProducer
 
 
 __all__ = [
