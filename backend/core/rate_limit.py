@@ -1,8 +1,13 @@
 from backend.db.connections.redis import AsyncRedisDBConnection
+from fastapi_limiter.depends import RateLimiter
 from fastapi_limiter import FastAPILimiter
 from utils.logger import get_logger
 
 logger = get_logger("core.rate_limit")
+
+
+def RateLimit(times: int, seconds: int) -> RateLimiter:
+    return RateLimiter(times=times, seconds=seconds)
 
 
 async def init_rate_limiter():
