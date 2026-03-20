@@ -18,6 +18,22 @@ class RateLimitExceededException(HTTPException):
         )
 
 
+class BadRequestException(HTTPException):
+    def __init__(self, detail: str = "Bad Request"):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=detail,
+        )
+
+
+class ConflictException(HTTPException):
+    def __init__(self, detail: str = "Resource Conflict"):
+        super().__init__(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=detail,
+        )
+
+
 class ResourceNotFoundException(HTTPException):
     def __init__(self, resource_name: str = "Resource"):
         super().__init__(
