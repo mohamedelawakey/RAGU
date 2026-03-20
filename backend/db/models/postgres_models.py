@@ -9,6 +9,18 @@ from sqlalchemy import (
 Base = declarative_base()
 
 
+# User model
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String(255), primary_key=True)
+    username = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# Document model
 class Document(Base):
     __tablename__ = "documents"
 
@@ -26,11 +38,17 @@ class Document(Base):
     )
 
 
+# Document chunk model
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
     id = Column(String(100), primary_key=True)
-    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
     page_number = Column(Integer, nullable=True)
     text_content = Column(Text, nullable=False)
     document = relationship(
