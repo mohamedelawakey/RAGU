@@ -7,7 +7,7 @@ logger = get_logger("core.rate_limit")
 
 async def init_rate_limiter():
     try:
-        redis_pool = AsyncRedisDBConnection.get_redis()
+        redis_pool = await AsyncRedisDBConnection.get_connection()
         await FastAPILimiter.init(redis_pool)
 
         logger.info(
