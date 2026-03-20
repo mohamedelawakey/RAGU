@@ -23,14 +23,21 @@ MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
 MILVUS_PORT = int(os.getenv("MILVUS_PORT", 19530))
 MILVUS_ALIAS = os.getenv("MILVUS_ALIAS", "default")
 MILVUS_TIMEOUT = float(os.getenv("MILVUS_TIMEOUT", 5.0))
+EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", 1024))
 
 # connection pool config
 MIN_CONNECTIONS = int(os.getenv("MIN_CONNECTIONS", 1))
 MAX_CONNECTIONS = int(os.getenv("MAX_CONNECTIONS", 20))
 
 # rabbitmq config
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
-RABBITMQ_QUEUE_NAME = os.getenv("RABBITMQ_QUEUE_NAME", "document_ingestion_queue")
+RABBITMQ_URL = os.getenv(
+    "RABBITMQ_URL",
+    "amqp://guest:guest@localhost/"
+)
+RABBITMQ_QUEUE_NAME = os.getenv(
+    "RABBITMQ_QUEUE_NAME",
+    "document_ingestion_queue"
+)
 
 # postgres queries
 UPDATE_DOCUMENT_STATUS = """
@@ -38,6 +45,18 @@ UPDATE_DOCUMENT_STATUS = """
     SET status = $1
     WHERE id = $2
 """
+
+# auth config
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY:
+    raise ValueError("FATAL: SECRET_KEY environment variable is not set. Refusing insecure initialization.")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)
+)
+REFRESH_TOKEN_EXPIRE_DAYS = int(
+    os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 30)
+)
 
 
 class Config:
@@ -65,6 +84,7 @@ class Config:
     MILVUS_PORT = MILVUS_PORT
     MILVUS_ALIAS = MILVUS_ALIAS
     MILVUS_TIMEOUT = MILVUS_TIMEOUT
+    EMBEDDING_DIM = EMBEDDING_DIM
 
     # rabbitmq config
     RABBITMQ_URL = RABBITMQ_URL
@@ -72,3 +92,9 @@ class Config:
 
     # postgres queries
     UPDATE_DOCUMENT_STATUS = UPDATE_DOCUMENT_STATUS
+
+    # auth config
+    SECRET_KEY = SECRET_KEY
+    ALGORITHM = ALGORITHM
+    ACCESS_TOKEN_EXPIRE_MINUTES = ACCESS_TOKEN_EXPIRE_MINUTES
+    REFRESH_TOKEN_EXPIRE_DAYS = REFRESH_TOKEN_EXPIRE_DAYS
