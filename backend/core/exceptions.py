@@ -34,6 +34,11 @@ class ConflictException(HTTPException):
         )
 
 
+class UserAlreadyExistsException(ConflictException):
+    def __init__(self, detail: str = "Email or Username already registered."):
+        super().__init__(detail=detail)
+
+
 class ResourceNotFoundException(HTTPException):
     def __init__(self, resource_name: str = "Resource"):
         super().__init__(
@@ -48,5 +53,29 @@ class InternalServerException(HTTPException):
     ):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=detail,
+        )
+
+
+class ForbiddenException(HTTPException):
+    def __init__(self, detail: str = "Access Forbidden"):
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
+        )
+
+
+class PayloadTooLargeException(HTTPException):
+    def __init__(self, detail: str = "Payload Too Large"):
+        super().__init__(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=detail,
+        )
+
+
+class UnsupportedMediaTypeException(HTTPException):
+    def __init__(self, detail: str = "Unsupported Media Type"):
+        super().__init__(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=detail,
         )
