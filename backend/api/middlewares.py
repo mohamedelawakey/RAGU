@@ -1,7 +1,6 @@
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.exceptions import ClientDisconnect
-from starlette.requests import Request
+from starlette.requests import Request, ClientDisconnect
 from backend.config import Config
 from utils.logger import get_logger
 from fastapi import FastAPI
