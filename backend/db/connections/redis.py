@@ -68,3 +68,11 @@ class AsyncRedisDBConnection:
                     f"Async Redis connection fatal error: {e}", exc_info=True
                 )
                 raise
+
+    @staticmethod
+    async def close():
+        if AsyncRedisDBConnection._instance:
+            await AsyncRedisDBConnection._instance.close()
+            AsyncRedisDBConnection._instance = None
+            AsyncRedisDBConnection._pool = None
+            logger.info("Redis connection closed.")

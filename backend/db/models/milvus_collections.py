@@ -1,5 +1,5 @@
 from pymilvus import CollectionSchema, FieldSchema, DataType
-from pipeline.config import Config
+from backend.config import Config
 
 
 def get_chunk_schema() -> CollectionSchema:
