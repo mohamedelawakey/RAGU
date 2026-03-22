@@ -6,5 +6,5 @@ __all__ = [
     "User",
     "Document",
     "DocumentChunk",
-    "get_chunk_schema",
+    "get_chunk_schema"
 ]
