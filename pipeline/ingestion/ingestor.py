@@ -7,8 +7,8 @@ from pipeline.cleaning.cleaner import Cleaner
 from pymilvus import Collection, utility
 from utils.logger import get_logger
 from pipeline.config import Config
+import asyncio
 import uuid
-
 
 logger = get_logger("ingestion.module")
 
@@ -43,25 +43,25 @@ class DocumentIngestor:
             )
 
         logger.info("Extracting text from document...")
-        text = DocumentExtractor.extract(filePath)
+        text = await asyncio.to_thread(DocumentExtractor.extract, filePath)
         if not text:
             logger.error(f"Failed to extract text from {filePath}")
             raise ValueError(f"No text extracted from document '{filePath}'")
 
         logger.info("Cleaning extracted text...")
-        text = Cleaner.clean(text)
+        text = await asyncio.to_thread(Cleaner.clean, text)
         if not text:
             logger.error(f"Text became empty after cleaning {filePath}")
             raise ValueError("Text became empty after cleaning")
 
         logger.info("Chunking extracted text...")
-        chunks = TextSplitter.text_split(text)
+        chunks = await asyncio.to_thread(TextSplitter.text_split, text)
         if not chunks:
             logger.error(f"Failed to generate chunks for {filePath}")
             raise RuntimeError("Document chunking failed")
 
         logger.info(f"Generating embeddings for {len(chunks)} chunks...")
-        embeddings = Embedding.embed(chunks)
+        embeddings = await asyncio.to_thread(Embedding.embed, chunks)
         if not embeddings or len(embeddings) != len(chunks):
             logger.error(
                 "Failed to generate embeddings or mismatch in "
