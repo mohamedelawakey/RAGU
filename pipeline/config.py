@@ -44,7 +44,7 @@ class Config:
     """
 
     # BM25 Search Configurations (Advanced Multilingual & Fuzzy Search)
-    BM25_TOP_K = 5
+    BM25_TOP_K = 20
     BM25_QUERY = """
         WITH search_query AS (
             SELECT websearch_to_tsquery('simple', $1) AS q
@@ -69,14 +69,14 @@ class Config:
     """
 
     # Semantic Search Configurations
-    SEMANTIC_SEARCH_TOP_K = 5
+    SEMANTIC_SEARCH_TOP_K = 20
     COLLECTION_NAME = "edu_chunks"
     SEARCH_PARAMS_METRIC_TYPE = "COSINE"
     SEARCH_PARAMS_NPROBE = 10
     MILVUS_ALIAS = "default"
 
     # Hybrid Search Configurations
-    HYBRID_SEARCH_TOP_K = 5
+    HYBRID_SEARCH_TOP_K = 20
     RRF_K = 60
 
     # Retriever Configurations
@@ -88,4 +88,4 @@ class Config:
 
     # Reranker Configurations
     RERANKER_MODEL = "rerank-v3.5"
-    RERANKER_TOP_N = 5
+    RERANKER_TOP_N = 20
