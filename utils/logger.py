@@ -35,9 +35,12 @@ def _start_listener():
     )
     fh.setFormatter(json_formatter)
 
+    sh = logging.StreamHandler()
+    sh.setFormatter(json_formatter)
+
     listener = QueueListener(
         log_queue,
-        fh,
+        fh, sh,
         respect_handler_level=True
     )
     listener.start()
