@@ -8,7 +8,6 @@ __pycache__/
 
 # some files
 .RAGU/
-FUTURE_ROADMAP.md
 
 # Distribution / packaging
 .Python
