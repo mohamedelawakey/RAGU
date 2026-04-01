@@ -32,8 +32,17 @@ class HybridSearch:
 
             semantic_results, bm25_results = await asyncio.gather(
                 semantic_results_task,
-                bm25_results_task
+                bm25_results_task,
+                return_exceptions=True
             )
+
+            if isinstance(semantic_results, Exception):
+                logger.error(f"Semantic search failed with exception: {semantic_results}")
+                semantic_results = []
+
+            if isinstance(bm25_results, Exception):
+                logger.error(f"BM25 search failed with exception: {bm25_results}")
+                bm25_results = []
 
             if semantic_results is None and bm25_results is None:
                 logger.error("Hybrid search failed: both Semantic and BM25 backends returned None.")
