@@ -16,6 +16,11 @@ logger = get_logger("features.documents.service")
 
 os.makedirs(Config.UPLOAD_DIR, exist_ok=True)
 
+try:
+    from pymilvus import Collection
+except ImportError:
+    Collection = None
+
 
 class DocumentService:
     @staticmethod
@@ -100,3 +105,39 @@ class DocumentService:
             )
 
         return dict(record)
+
+    @staticmethod
+    async def get_user_documents(user_id: str, db: Connection) -> list:
+        records = await db.fetch(
+            Config.GET_USER_DOCUMENTS_QUERY,
+            user_id
+        )
+        return [dict(r) for r in records]
+
+    @staticmethod
+    async def delete_document(doc_id: int, user_id: str, db: Connection) -> bool:
+        file_path = await db.fetchval(
+            Config.DELETE_DOCUMENT_QUERY,
+            doc_id, user_id
+        )
+
+        if not file_path:
+            raise ResourceNotFoundException(detail="Document not found or access denied.")
+
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                logger.info(f"Deleted physical file: {file_path}")
+            except Exception as e:
+                logger.warning(f"Failed to delete physical file {file_path}: {e}")
+
+        if Collection:
+            try:
+                collection_name = os.getenv("COLLECTION_NAME", "edu_chunks")
+                collection = Collection(collection_name)
+                collection.delete(f"document_id == {doc_id}")
+                logger.info(f"Deleted Milvus vectors for document {doc_id}")
+            except Exception as e:
+                logger.error(f"Failed to delete Milvus vectors for document {doc_id}: {e}")
+
+        return True
