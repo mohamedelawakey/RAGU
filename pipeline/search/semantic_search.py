@@ -25,6 +25,10 @@ class SemanticSearch:
         self.search_params = {
             "metric_type": Config.SEARCH_PARAMS_METRIC_TYPE,
             "params": {
+                "ef": Config.SEARCH_PARAMS_EF
+            }
+
+            if Config.MILVUS_INDEX_TYPE == "HNSW" else {
                 "nprobe": Config.SEARCH_PARAMS_NPROBE
             }
         }
