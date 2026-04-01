@@ -1,4 +1,4 @@
-from backend.db.models.milvus_collections import get_chunk_schema
+from backend.db.models.milvus_collections import get_chunk_schema, get_chat_memory_schema
 from backend.db.connections.milvus import AsyncMilvusDBConnection
 from backend.db.connections.postgres import PostgresDBConnection
 from pymilvus import Collection, utility
@@ -15,6 +15,14 @@ async def init_milvus_collections():
         await AsyncMilvusDBConnection.get_connection()
 
         collection_name = "edu_chunks"
+        hnsw_m = int(os.getenv("HNSW_M", 8))
+        hnsw_ef = int(os.getenv("HNSW_EF_CONSTRUCTION", 64))
+
+        index_params = {
+            "metric_type": "COSINE",
+            "index_type": "HNSW",
+            "params": {"M": hnsw_m, "efConstruction": hnsw_ef}
+        }
 
         if utility.has_collection(collection_name):
             logger.info(f"Collection '{collection_name}' already exists.")
@@ -22,22 +30,24 @@ async def init_milvus_collections():
             logger.info(f"Creating Collection '{collection_name}'...")
             schema = get_chunk_schema()
             collection = Collection(name=collection_name, schema=schema)
-
-            hnsw_m = int(os.getenv("HNSW_M", 8))
-            hnsw_ef = int(os.getenv("HNSW_EF_CONSTRUCTION", 64))
-
-            index_params = {
-                "metric_type": "COSINE",
-                "index_type": "HNSW",
-                "params": {"M": hnsw_m, "efConstruction": hnsw_ef}
-            }
-
             logger.info(f"Creating index for '{collection_name}'...")
             collection.create_index(field_name="embedding", index_params=index_params)
-
             logger.info(f"Loading '{collection_name}' into memory...")
             collection.load()
-            logger.info("Milvus setup completed successfully!")
+
+        chat_collection = "edu_chat_memory"
+        if utility.has_collection(chat_collection):
+            logger.info(f"Collection '{chat_collection}' already exists.")
+        else:
+            logger.info(f"Creating Collection '{chat_collection}'...")
+            schema = get_chat_memory_schema()
+            collection = Collection(name=chat_collection, schema=schema)
+            logger.info(f"Creating index for '{chat_collection}'...")
+            collection.create_index(field_name="embedding", index_params=index_params)
+            logger.info(f"Loading '{chat_collection}' into memory...")
+            collection.load()
+
+        logger.info("Milvus setup completed successfully!")
 
     except Exception as e:
         logger.exception(f"Milvus setup failed: {e}")
@@ -57,13 +67,32 @@ async def init_postgres_db():
                 CREATE INDEX IF NOT EXISTS idx_chunks_text_tsvector 
                 ON document_chunks USING GIN(to_tsvector('simple', text_content));
             """)
-            
+
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_chunks_text_trgm 
                 ON document_chunks USING GIN(text_content gin_trgm_ops);
             """)
 
-            logger.info("Postgres setup (extensions and indexes) completed successfully!")
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS chat_sessions (
+                    id VARCHAR(100) PRIMARY KEY,
+                    user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    title VARCHAR(255) NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+            """)
+
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id VARCHAR(100) PRIMARY KEY,
+                    session_id VARCHAR(100) NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+                    role VARCHAR(50) NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+            """)
+
+            logger.info("Postgres setup (extensions, indexes, and chat tables) completed successfully!")
     except Exception as e:
         logger.exception(f"Postgres setup failed: {e}")
         raise
