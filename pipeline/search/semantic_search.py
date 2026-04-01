@@ -27,10 +27,6 @@ class SemanticSearch:
             "params": {
                 "ef": Config.SEARCH_PARAMS_EF
             }
-
-            if Config.MILVUS_INDEX_TYPE == "HNSW" else {
-                "nprobe": Config.SEARCH_PARAMS_NPROBE
-            }
         }
 
     async def _run_in_executor(self, func, *args, **kwargs):
