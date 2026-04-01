@@ -1,14 +1,53 @@
+from pipeline.prompting.prompts import Prompts
 from utils.logger import get_logger
 from pipeline.config import Config
 from dotenv import load_dotenv
 import cohere
-import os
 import time
+import os
 
 logger = get_logger("cohere_llm.module")
 
 
 class CohereClient:
+    @staticmethod
+    def reformulate_query(query: str, history: list) -> str:
+        if not history or len(history) == 0:
+            return query
+
+        load_dotenv()
+        api_key = os.getenv("COHERE_API_KEY")
+        if not api_key:
+            return query
+
+        client = cohere.ClientV2(api_key=api_key)
+
+        sys_prompt = Prompts.get_reformulation_system_prompt()
+        history_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in history])
+        user_prompt = Prompts.get_reformulation_user_prompt(query, history_text)
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+
+        try:
+            logger.info("CohereClient: Reformulating query based on history...")
+            response = client.chat(
+                model=Config.COHERE_MODEL_NAME,
+                messages=messages,
+                temperature=0.1
+            )
+
+            rewritten = response.message.content[0].text.strip()
+            rewritten = rewritten.replace('"', '').replace("'", "")
+
+            logger.info(f"CohereClient: Query reformulated -> {rewritten}")
+            return rewritten
+        except Exception as e:
+            logger.error(f"CohereClient failed to reformulate query: {e}")
+            return query
+
     @staticmethod
     def cohere_chat(messages: list):
         load_dotenv()
