@@ -30,6 +30,7 @@ class Document(Base):
     file_path = Column(String(500), nullable=False)
     upload_date = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String(50), default="processing")
+    error_message = Column(Text, nullable=True)
     metadata_info = Column(JSON, nullable=True)
     chunks = relationship(
         "DocumentChunk",
@@ -55,3 +56,31 @@ class DocumentChunk(Base):
         "Document",
         back_populates="chunks"
     )
+
+
+# Chat Session model
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(String(100), primary_key=True)
+    user_id = Column(String(255), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    messages = relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="ChatMessage.created_at"
+    )
+
+
+# Chat Message model
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(String(100), primary_key=True)
+    session_id = Column(String(100), ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(50), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    session = relationship("ChatSession", back_populates="messages")
