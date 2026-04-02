@@ -1,7 +1,3 @@
-from backend.db.connections.postgres import PostgresDBConnection
-from backend.db.connections.redis import AsyncRedisDBConnection
-from backend.config import Config as BackendConfig
-
 from pipeline.retrieval.chat_retriever import ChatMemoryRetriever
 from pipeline.prompting.prompt_builder import PromptBuilder
 from pipeline.LLM.cohere_client import CohereClient
@@ -23,58 +19,12 @@ class RAGPipeline:
         user_question: str,
         user_id: str,
         session_id: str = None,
-        history: list = None
+        history: list = None,
+        doc_count: int = 0
     ) -> Optional[Generator]:
         if not user_question or not user_question.strip():
             logger.warning("RAGPipeline: empty question received.")
             return None
-
-        doc_count = 0
-        try:
-            logger.info("RAGPipeline: Connecting to Postgres...")
-            async with PostgresDBConnection.get_db_connection() as conn:
-                logger.info(
-                    "RAGPipeline: Postgres connection acquired. "
-                    "Fetching..."
-                )
-                doc_count = await conn.fetchval(
-                    BackendConfig.CHECK_USER_DOCUMENT_QUOTA_QUERY,
-                    user_id
-                )
-                logger.info(f"RAGPipeline: Doc Count: {doc_count}")
-        except Exception as e:
-            logger.error(
-                f"RAGPipeline: Error checking document count: {e}"
-            )
-
-        redis_client = None
-        query_count = 0
-        if doc_count == 0:
-            try:
-                logger.info("RAGPipeline: Connecting to Redis...")
-                redis_client = await AsyncRedisDBConnection.get_connection()
-                logger.info(
-                    "RAGPipeline: Redis connection acquired. "
-                    "Fetching..."
-                )
-                query_count_str = await redis_client.get(
-                    f"user:{user_id}:queries_count"
-                )
-                query_count = (
-                    int(query_count_str) if query_count_str else 0
-                )
-                logger.info(f"RAGPipeline: Query Count: {query_count}")
-            except Exception as e:
-                logger.error(
-                    f"RAGPipeline: Error checking Redis queries count: {e}"
-                )
-
-        if query_count >= 3:
-            logger.warning(
-                f"RAGPipeline: User '{user_id}' "
-                "exceeded general QA limit."
-            )
-            raise ValueError("RATE_LIMIT_EXCEEDED")
 
         search_query = user_question
         if history and len(history) > 0:
@@ -106,15 +56,6 @@ class RAGPipeline:
             logger.info(
                 "RAGPipeline: User has 0 documents, using general knowledge QA."
             )
-            if redis_client:
-                try:
-                    await redis_client.incr(f"user:{user_id}:queries_count")
-                except Exception as e:
-                    logger.error(
-                        f"RAGPipeline: Error incrementing Redis query "
-                        f"count: {e}"
-                    )
-
             reranked = []
             context = ""
         else:
