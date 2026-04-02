@@ -7,7 +7,7 @@ logger = get_logger("prompt_builder.module")
 
 class PromptBuilder:
     @staticmethod
-    def build(user_question: str, context: str) -> list[dict]:
+    def build(user_question: str, context: str, history: list = None) -> list[dict]:
         logger.info("Building secure prompt for the user question...")
 
         if not user_question or not user_question.strip():
@@ -32,12 +32,20 @@ class PromptBuilder:
             {
                 "role": "system",
                 "content": system_message
-            },
-            {
-                "role": "user",
-                "content": user_message
             }
         ]
+
+        if history:
+            for msg in history:
+                messages.append({
+                    "role": "user" if msg["role"] == "user" else "assistant",
+                    "content": msg["content"]
+                })
+
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
 
         logger.info("Secure messages assembled with dynamic boundaries.")
         return messages

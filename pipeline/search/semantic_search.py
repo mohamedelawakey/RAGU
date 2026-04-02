@@ -25,7 +25,7 @@ class SemanticSearch:
         self.search_params = {
             "metric_type": Config.SEARCH_PARAMS_METRIC_TYPE,
             "params": {
-                "nprobe": Config.SEARCH_PARAMS_NPROBE
+                "ef": Config.SEARCH_PARAMS_EF
             }
         }
 

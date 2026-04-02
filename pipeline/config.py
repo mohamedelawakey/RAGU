@@ -72,6 +72,7 @@ class Config:
     SEMANTIC_SEARCH_TOP_K = 20
     COLLECTION_NAME = "edu_chunks"
     SEARCH_PARAMS_METRIC_TYPE = "COSINE"
+    SEARCH_PARAMS_EF = 64
     SEARCH_PARAMS_NPROBE = 10
     MILVUS_ALIAS = "default"
 
