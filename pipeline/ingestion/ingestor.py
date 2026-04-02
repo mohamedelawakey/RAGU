@@ -137,6 +137,13 @@ class DocumentIngestor:
                     f"Successfully indexed document {document_id} in Milvus."
                 )
             except Exception as e:
+                logger.error(f"Milvus indexing failed for document {document_id}. Rolling back chunks in Postgres...")
+                try:
+                    async with PostgresDBConnection.get_db_connection() as conn:
+                        await conn.execute(Config.DELETE_CHUNKS, document_id)
+                except Exception as rollback_err:
+                    logger.critical(f"Failed to rollback chunks for document {document_id}: {str(rollback_err)}")
+
                 return False, f"Milvus indexing error: {str(e)}"
 
             return True, ""

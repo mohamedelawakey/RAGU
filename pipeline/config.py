@@ -54,6 +54,11 @@ class Config:
         VALUES ($1, $2, $3, $4)
     """
 
+    # delete chunks from Postgres
+    DELETE_CHUNKS = """
+        DELETE FROM document_chunks WHERE document_id = $1
+    """
+
     # BM25 Search Configurations (Advanced Multilingual & Fuzzy Search)
     BM25_TOP_K = 20
     BM25_QUERY = """

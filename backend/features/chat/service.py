@@ -1,5 +1,6 @@
 from pipeline.retrieval.chat_retriever import ChatMemoryRetriever
 from backend.db.connections.postgres import PostgresDBConnection
+from backend.db.connections.redis import AsyncRedisDBConnection
 from pipeline.orchestrator.orchestrator import RAGPipeline
 from utils.logger import get_logger
 from backend.config import Config
@@ -116,18 +117,42 @@ class ChatService:
 
         yield f"data: {json.dumps({'session_id': session_id})}\n\n"
 
+        doc_count = 0
+        try:
+            async with PostgresDBConnection.get_db_connection() as conn:
+                doc_count = await conn.fetchval(
+                    Config.CHECK_USER_DOCUMENT_QUOTA_QUERY,
+                    user_id
+                )
+        except Exception as e:
+            logger.error(f"ChatService: Error checking doc count: {e}")
+
+        redis_client = None
+        query_count = 0
+        if doc_count == 0:
+            try:
+                redis_client = await AsyncRedisDBConnection.get_connection()
+                query_count_str = await redis_client.get(f"user:{user_id}:queries_count")
+                query_count = int(query_count_str) if query_count_str else 0
+            except Exception as e:
+                logger.error(f"ChatService: Error checking queries count: {e}")
+
+        if query_count >= 3:
+            error_msg = Config.CHAT_RATE_LIMIT_MSG_AR if is_arabic(query) else Config.CHAT_RATE_LIMIT_MSG_EN
+            payload = json.dumps({"text": error_msg}, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+            return
+
         try:
             pipeline = RAGPipeline()
-            sync_gen = await pipeline.query(query, user_id, session_id=session_id, history=history_msgs)
-        except ValueError as ve:
-            if str(ve) == "RATE_LIMIT_EXCEEDED":
-                error_msg = Config.CHAT_RATE_LIMIT_MSG_AR if is_arabic(query) else Config.CHAT_RATE_LIMIT_MSG_EN
-                payload = json.dumps({"text": error_msg}, ensure_ascii=False)
-                yield f"data: {payload}\n\n"
-            else:
-                logger.error(f"ChatService value error: {ve}")
-                yield f"data: {Config.CHAT_ERROR_INVALID_PARAMS}\n\n"
-            return
+            sync_gen = await pipeline.query(query, user_id, session_id=session_id, history=history_msgs, doc_count=doc_count)
+
+            if doc_count == 0 and sync_gen is not None and redis_client:
+                try:
+                    await redis_client.incr(f"user:{user_id}:queries_count")
+                except Exception as e:
+                    logger.error(f"ChatService: Error incrementing redis count: {e}")
+
         except Exception as e:
             logger.error(f"ChatService failed to initialize pipeline query: {e}")
             yield f"data: {Config.CHAT_ERROR_PIPELINE_INIT}\n\n"
