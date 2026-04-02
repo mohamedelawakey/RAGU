@@ -44,19 +44,16 @@ def get_chat_memory_schema() -> CollectionSchema:
         is_primary=True,
         auto_id=False
     )
-
     session_id = FieldSchema(
         name="session_id",
         dtype=DataType.VARCHAR,
-        max_length=100
+        max_length=255
     )
-
     user_id = FieldSchema(
         name="user_id",
         dtype=DataType.VARCHAR,
         max_length=255
     )
-
     embedding = FieldSchema(
         name="embedding",
         dtype=DataType.FLOAT_VECTOR,
@@ -65,7 +62,6 @@ def get_chat_memory_schema() -> CollectionSchema:
 
     schema = CollectionSchema(
         fields=[message_id, session_id, user_id, embedding],
-        description="Semantic Chat Memory Embeddings for RAG (Text stored in PG)"
+        description="Semantic Chat Memory Collection"
     )
-
     return schema

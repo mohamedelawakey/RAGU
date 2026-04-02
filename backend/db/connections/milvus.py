@@ -65,82 +65,37 @@ class AsyncMilvusDBConnection:
 
             except Exception as e:
                 logger.exception("Unexpected error connecting to Milvus")
-                raise ConnectionError(
-                    f"Unexpected error connecting to Milvus: {e}"
-                ) from e
+                raise ConnectionError(f"Unexpected error connecting to Milvus: {e}") from e
 
     @staticmethod
-    async def initialize_collection(
-        collection_name: str,
-        schema
-    ) -> Collection:
+    async def initialize_collection(collection_name: str, schema) -> None:
         await AsyncMilvusDBConnection.get_connection()
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: AsyncMilvusDBConnection._init_collection_sync(collection_name, schema)
+        )
 
-        if utility.has_collection(collection_name):
-            logger.info(
-                f"Milvus collection '{collection_name}' already exists."
+    @staticmethod
+    def _init_collection_sync(collection_name: str, schema) -> None:
+        from pymilvus import utility, Collection
+        if not utility.has_collection(collection_name, using=Config.MILVUS_ALIAS):
+            collection = Collection(
+                name=collection_name,
+                schema=schema,
+                using=Config.MILVUS_ALIAS,
             )
-            collection = Collection(collection_name)
-
-            existing_indexes = collection.indexes
-            if existing_indexes:
-                current_index_params = existing_indexes[0].params
-                current_index_type = current_index_params.get("index_type")
-                current_metric_type = current_index_params.get("metric_type")
-
-                needs_update = (
-                    current_index_type != Config.MILVUS_INDEX_TYPE or
-                    current_metric_type != Config.MILVUS_METRIC_TYPE
-                )
-
-                if (
-                    current_index_type == "HNSW" and
-                    Config.MILVUS_INDEX_TYPE == "HNSW"
-                ):
-                    if (
-                        current_index_params.get("M") !=
-                        Config.MILVUS_HNSW_M or
-                        current_index_params.get("efConstruction") !=
-                        Config.MILVUS_HNSW_EF_CONSTRUCTION
-                    ):
-                        needs_update = True
-
-                if needs_update:
-                    logger.info(
-                        f"Updating index for '{collection_name}' to "
-                        f"{Config.MILVUS_INDEX_TYPE}..."
-                    )
-                    collection.release()
-                    collection.drop_index()
-                else:
-                    collection.load()
-                    return collection
-
-        else:
-            logger.info(
-                f"Creating missing Milvus collection: "
-                f"'{collection_name}'..."
-            )
-            collection = Collection(name=collection_name, schema=schema)
-
-        index_params = {
-            "metric_type": Config.MILVUS_METRIC_TYPE,
-            "index_type": Config.MILVUS_INDEX_TYPE,
-            "params": {
-                "M": Config.MILVUS_HNSW_M,
-                "efConstruction": Config.MILVUS_HNSW_EF_CONSTRUCTION
+            index_params = {
+                "metric_type": Config.MILVUS_METRIC_TYPE,
+                "index_type": Config.MILVUS_INDEX_TYPE,
+                "params": {"M": Config.MILVUS_HNSW_M, "efConstruction": Config.MILVUS_HNSW_EF_CONSTRUCTION}
             }
-        }
+            collection.create_index(
+                field_name="embedding",
+                index_params=index_params
+            )
+            collection.load()
+            logger.info(f"Initialized collection: {collection_name}")
+        else:
+            logger.info(f"Collection {collection_name} already exists.")
 
-        collection.create_index(
-            field_name="embedding",
-            index_params=index_params
-        )
-        collection.load()
-
-        logger.info(
-            f"Milvus collection '{collection_name}' initialized with "
-            f"{Config.MILVUS_INDEX_TYPE} index."
-        )
-
-        return collection

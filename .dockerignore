@@ -13,3 +13,8 @@ logs/
 .idea/
 .vscode/
 scripts/
+frontend/
+node_modules/
+.next/
+nginx/
+.DS_Store
