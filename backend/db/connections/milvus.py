@@ -1,7 +1,7 @@
+from pymilvus import connections, utility, Collection
 from pymilvus.exceptions import MilvusException
 from utils.logger import get_logger
 from backend.config import Config
-from pymilvus import connections
 from typing import Optional
 import threading
 import asyncio
@@ -23,11 +23,17 @@ class AsyncMilvusDBConnection:
             if AsyncMilvusDBConnection._lock is None:
                 AsyncMilvusDBConnection._lock = asyncio.Lock()
 
-        if AsyncMilvusDBConnection._connected or connections.has_connection(alias):
+        if (
+            AsyncMilvusDBConnection._connected or
+            connections.has_connection(alias)
+        ):
             return True
 
         async with AsyncMilvusDBConnection._lock:
-            if AsyncMilvusDBConnection._connected or connections.has_connection(alias):
+            if (
+                AsyncMilvusDBConnection._connected or
+                connections.has_connection(alias)
+            ):
                 AsyncMilvusDBConnection._connected = True
                 return True
 
@@ -44,13 +50,18 @@ class AsyncMilvusDBConnection:
                 )
 
                 AsyncMilvusDBConnection._connected = True
-                logger.info(f"Connected to Milvus successfully on {Config.MILVUS_HOST}:{Config.MILVUS_PORT}")
+                logger.info(
+                    f"Connected to Milvus successfully on "
+                    f"{Config.MILVUS_HOST}:{Config.MILVUS_PORT}"
+                )
 
                 return True
 
             except MilvusException as e:
                 logger.exception("MilvusException during connection")
-                raise ConnectionError(f"Failed to connect to Milvus: {e}") from e
+                raise ConnectionError(
+                    f"Failed to connect to Milvus: {e}"
+                ) from e
 
             except Exception as e:
                 logger.exception("Unexpected error connecting to Milvus")
@@ -87,3 +98,4 @@ class AsyncMilvusDBConnection:
             logger.info(f"Initialized collection: {collection_name}")
         else:
             logger.info(f"Collection {collection_name} already exists.")
+

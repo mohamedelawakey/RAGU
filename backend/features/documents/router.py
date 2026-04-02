@@ -2,6 +2,7 @@ from backend.features.documents.schemas import DocumentUploadResponse, DocumentS
 from backend.features.documents.service import DocumentService
 from backend.api.dependencies import get_db, get_current_user
 from fastapi import APIRouter, Depends, UploadFile, File
+from typing import List
 import backend.core.exceptions as exceptions
 from utils.logger import get_logger
 from asyncpg import Connection
@@ -38,4 +39,32 @@ async def get_document_status(
         raise
     except Exception as e:
         logger.error(f"Error fetching document status for doc {doc_id}: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.get("/", response_model=List[DocumentStatusResponse])
+async def get_all_user_documents(
+    user_id: str = Depends(get_current_user),
+    db: Connection = Depends(get_db)
+):
+    try:
+        return await DocumentService.get_user_documents(user_id, db)
+    except Exception as e:
+        logger.error(f"Error fetching documents list for user {user_id}: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.delete("/{doc_id}")
+async def delete_document(
+    doc_id: int,
+    user_id: str = Depends(get_current_user),
+    db: Connection = Depends(get_db)
+):
+    try:
+        await DocumentService.delete_document(doc_id, user_id, db)
+        return {"detail": "Document deleted successfully"}
+    except exceptions.ResourceNotFoundException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting document {doc_id} for user {user_id}: {e}")
         raise exceptions.InternalServerException()

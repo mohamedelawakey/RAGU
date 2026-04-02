@@ -1,9 +1,9 @@
 from .milvus import AsyncMilvusDBConnection
 from .postgres import PostgresDBConnection
-from .redis import RedisConnection
+from .redis import AsyncRedisDBConnection
 
 __all__ = [
     "AsyncMilvusDBConnection",
     "PostgresDBConnection",
-    "RedisConnection"
+    "AsyncRedisDBConnection"
 ]
