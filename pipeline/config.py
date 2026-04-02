@@ -82,7 +82,7 @@ class Config:
     # Semantic Search Configurations
     SEMANTIC_SEARCH_TOP_K = 20
     COLLECTION_NAME = "edu_chunks"
-    SEARCH_PARAMS_METRIC_TYPE = "IP"
+    SEARCH_PARAMS_METRIC_TYPE = "COSINE"
     MILVUS_INDEX_TYPE = os.getenv("MILVUS_INDEX_TYPE", "HNSW")
     SEARCH_PARAMS_EF = int(os.getenv("MILVUS_HNSW_EF", "64"))
     MILVUS_ALIAS = "default"
