@@ -17,22 +17,23 @@ class LoadModel:
             return cls._model
 
         with cls._lock:
-            try:
-                has_cuda = torch.cuda.is_available()
-                device = "cuda" if has_cuda else "cpu"
+            if cls._model is None:
+                try:
+                    has_cuda = torch.cuda.is_available()
+                    device = "cuda" if has_cuda else "cpu"
 
-                logger.info(
-                    f"Loading {Config.EMBEDDING_MODEL} on {device}..."
-                )
+                    logger.info(
+                        f"Loading {Config.EMBEDDING_MODEL} on {device}..."
+                    )
 
-                cls._model = SentenceTransformer(
-                    Config.EMBEDDING_MODEL, device=device
-                )
+                    cls._model = SentenceTransformer(
+                        Config.EMBEDDING_MODEL, device=device
+                    )
 
-                logger.info("Model loaded successfully!")
+                    logger.info("Model loaded successfully!")
 
-            except Exception as e:
-                logger.exception(f"Failed to load model: {e}")
-                return None
+                except Exception as e:
+                    logger.exception(f"Failed to load model: {e}")
+                    return None
 
         return cls._model
