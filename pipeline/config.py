@@ -1,4 +1,13 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 class Config:
+    # extraction
+    EXTRACTION_TIMEOUT = float(os.getenv('EXTRACTION_TIMEOUT', 300.0))
+
     # embeddings
     EMBEDDING_MODEL = 'BAAI/bge-m3'
     EMBEDDING_DIM = 1024
@@ -30,16 +39,18 @@ class Config:
         RETURNING id
     """
 
-    # Update Document Node status to completed
+    # Update Document Node status and optional error message
     UPDATE_DOCUMENT_STATUS = """
         UPDATE documents
-        SET status = $1
-        WHERE id = $2
+        SET status = $1, error_message = $2
+        WHERE id = $3
     """
 
     # insert chunks into Postgres
     INSERT_CHUNKS = """
-        INSERT INTO document_chunks (id, document_id, page_number, text_content)
+        INSERT INTO document_chunks (
+            id, document_id, page_number, text_content
+        )
         VALUES ($1, $2, $3, $4)
     """
 
@@ -49,8 +60,8 @@ class Config:
         WITH search_query AS (
             SELECT websearch_to_tsquery('simple', $1) AS q
         )
-        SELECT 
-            c.id as chunk_id, 
+        SELECT
+            c.id as chunk_id,
             (
                 ts_rank_cd(to_tsvector('simple', c.text_content), sq.q) * 0.7 +
                 similarity(c.text_content, $1) * 0.3
@@ -72,8 +83,8 @@ class Config:
     SEMANTIC_SEARCH_TOP_K = 20
     COLLECTION_NAME = "edu_chunks"
     SEARCH_PARAMS_METRIC_TYPE = "COSINE"
-    SEARCH_PARAMS_EF = 64
-    SEARCH_PARAMS_NPROBE = 10
+    MILVUS_INDEX_TYPE = os.getenv("MILVUS_INDEX_TYPE", "HNSW")
+    SEARCH_PARAMS_EF = int(os.getenv("MILVUS_HNSW_EF", "64"))
     MILVUS_ALIAS = "default"
 
     # Hybrid Search Configurations
@@ -90,3 +101,16 @@ class Config:
     # Reranker Configurations
     RERANKER_MODEL = "rerank-v3.5"
     RERANKER_TOP_N = 20
+
+    # Ingestion Configurations
+    INGESTION_BATCH_MULTIPLIER = 2
+    EMBEDDING_SLEEP_TIME = 0.1
+    MILVUS_BATCH_SIZE = 500
+
+    # Chat Retriever Configurations
+    CHAT_RETRIEVER_TOP_K = 5
+    CHAT_RETRIEVER_METRIC_TYPE = "COSINE"
+    CHAT_RETRIEVER_EF = 64
+    FETCH_CHAT_MESSAGES_QUERY = """
+        SELECT id, role, content, session_id FROM chat_messages WHERE id = ANY($1)
+    """

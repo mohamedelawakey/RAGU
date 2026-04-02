@@ -1,24 +1,39 @@
 from backend.db.connections.redis import AsyncRedisDBConnection
 from fastapi_limiter.depends import RateLimiter
-from fastapi_limiter import FastAPILimiter
 from utils.logger import get_logger
+from pyrate_limiter import (
+    RedisBucket, TimeClock, Limiter,
+    BucketFactory, Rate, RateItem
+)
 
 logger = get_logger("core.rate_limit")
 
 
+class AsyncRedisBucketFactory(BucketFactory):
+    def __init__(self, rates):
+        self.rates = rates
+        self.clock = TimeClock()
+        self.redis_pool = None
+
+    async def _get_redis(self):
+        if self.redis_pool is None:
+            self.redis_pool = await AsyncRedisDBConnection.get_connection()
+        return self.redis_pool
+
+    def wrap_item(self, name: str, weight: int = 1) -> RateItem:
+        now = self.clock.now()
+        return RateItem(name, now, weight=weight)
+
+    async def get(self, item: RateItem) -> RedisBucket:
+        redis_pool = await self._get_redis()
+        return RedisBucket(self.rates, redis_pool, f"ratelimit:{item.name}")
+
+
 def RateLimit(times: int, seconds: int) -> RateLimiter:
-    return RateLimiter(times=times, seconds=seconds)
+    rates = [Rate(times, seconds)]
+    factory = AsyncRedisBucketFactory(rates)
+    return RateLimiter(limiter=Limiter(factory))
 
 
 async def init_rate_limiter():
-    try:
-        redis_pool = await AsyncRedisDBConnection.get_connection()
-        await FastAPILimiter.init(redis_pool)
-
-        logger.info(
-            "FastAPI rate limiter successfully initialized with Redis."
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to initialize global rate limiter: {e}")
-        raise
+    logger.info("FastAPI rate limiter initialized with pyrate_limiter 0.2.0 RedisBucket factory.")

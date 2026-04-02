@@ -55,3 +55,35 @@ class AsyncMilvusDBConnection:
             except Exception as e:
                 logger.exception("Unexpected error connecting to Milvus")
                 raise ConnectionError(f"Unexpected error connecting to Milvus: {e}") from e
+
+    @staticmethod
+    async def initialize_collection(collection_name: str, schema) -> None:
+        await AsyncMilvusDBConnection.get_connection()
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: AsyncMilvusDBConnection._init_collection_sync(collection_name, schema)
+        )
+
+    @staticmethod
+    def _init_collection_sync(collection_name: str, schema) -> None:
+        from pymilvus import utility, Collection
+        if not utility.has_collection(collection_name, using=Config.MILVUS_ALIAS):
+            collection = Collection(
+                name=collection_name,
+                schema=schema,
+                using=Config.MILVUS_ALIAS,
+            )
+            index_params = {
+                "metric_type": Config.MILVUS_METRIC_TYPE,
+                "index_type": Config.MILVUS_INDEX_TYPE,
+                "params": {"M": Config.MILVUS_HNSW_M, "efConstruction": Config.MILVUS_HNSW_EF_CONSTRUCTION}
+            }
+            collection.create_index(
+                field_name="embedding",
+                index_params=index_params
+            )
+            collection.load()
+            logger.info(f"Initialized collection: {collection_name}")
+        else:
+            logger.info(f"Collection {collection_name} already exists.")
