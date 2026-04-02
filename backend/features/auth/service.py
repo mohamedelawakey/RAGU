@@ -1,7 +1,10 @@
-from backend.core.exceptions import CredentialsException, UserAlreadyExistsException
 from backend.core.security import (
     verify_password, get_password_hash, decode_token,
     create_access_token, create_refresh_token
+)
+from backend.core.exceptions import (
+    CredentialsException,
+    UserAlreadyExistsException
 )
 from backend.features.auth.schemas import (
     UserCreate, UserResponse, TokenResponse
@@ -53,10 +56,32 @@ class AuthService:
         access_token = create_access_token(data={"sub": user_id})
         refresh_token = create_refresh_token(data={"sub": user_id})
 
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
 
     @staticmethod
-    async def refresh_tokens(refresh_token: str, db: Connection, redis: Redis) -> TokenResponse:
+    async def get_current_user(user_id: str, db: Connection) -> UserResponse:
+        user_record = await db.fetchrow(
+            Config.GET_USER_BY_ID_QUERY,
+            user_id
+        )
+        if not user_record:
+            raise CredentialsException("User not found")
+
+        return UserResponse(
+            id=user_record["id"],
+            username=user_record["username"],
+            email=user_record["email"]
+        )
+
+    @staticmethod
+    async def refresh_tokens(
+        refresh_token: str,
+        db: Connection,
+        redis: Redis
+    ) -> TokenResponse:
         payload = decode_token(refresh_token, expected_type="refresh")
 
         user_id = payload.get("sub")
@@ -85,9 +110,40 @@ class AuthService:
         access_ttl = Config.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         refresh_ttl = Config.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
-        await redis.setex(f"{Config.REDIS_BLACKLIST_PREFIX}{acc_jti}", access_ttl, "true")
-        await redis.setex(f"{Config.REDIS_BLACKLIST_PREFIX}{ref_jti}", refresh_ttl, "true")
+        await redis.setex(
+            f"{Config.REDIS_BLACKLIST_PREFIX}{acc_jti}", access_ttl, "true"
+        )
+
+        await redis.setex(
+            f"{Config.REDIS_BLACKLIST_PREFIX}{ref_jti}", refresh_ttl, "true"
+        )
 
         return {
             "msg": "Successfully logged out across global networks"
         }
+
+    @staticmethod
+    async def update_username(user_id: str, new_username: str, db: Connection) -> dict:
+        existing = await db.fetchrow(
+            "SELECT id FROM users WHERE username = $1",
+            new_username
+        )
+        if existing and existing["id"] != user_id:
+            raise UserAlreadyExistsException()
+
+        await db.execute(
+            Config.UPDATE_USERNAME_QUERY,
+            new_username,
+            user_id
+        )
+        return {"msg": "Username updated successfully", "username": new_username}
+
+    @staticmethod
+    async def update_password(user_id: str, new_password: str, db: Connection) -> dict:
+        hashed_pw = get_password_hash(new_password)
+        await db.execute(
+            Config.UPDATE_PASSWORD_QUERY,
+            hashed_pw,
+            user_id
+        )
+        return {"msg": "Password updated successfully"}

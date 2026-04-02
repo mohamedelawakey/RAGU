@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 
 
 class UserCreate(BaseModel):
@@ -25,3 +25,19 @@ class RefreshTokenRequest(BaseModel):
 
 class LogoutRequest(BaseModel):
     refresh_token: str
+
+
+class UpdateUsernameRequest(BaseModel):
+    username: str
+
+    @validator('username')
+    def validate_words(cls, v):
+        if len(v.strip().split()) > 2:
+            raise ValueError("Username cannot exceed 2 words")
+        if not v.strip():
+            raise ValueError("Username cannot be empty")
+        return v.strip()
+
+
+class UpdatePasswordRequest(BaseModel):
+    new_password: str
