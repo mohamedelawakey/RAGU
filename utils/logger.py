@@ -11,7 +11,7 @@ import json_log_formatter
 import time
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_DIR = os.path.join(BASE_DIR, ".RAGU", "logs")
+LOG_DIR = os.getenv("LOG_DIR", os.path.join(BASE_DIR, ".RAGU", "logs"))
 os.makedirs(LOG_DIR, exist_ok=True)
 
 log_queue = queue.Queue()
