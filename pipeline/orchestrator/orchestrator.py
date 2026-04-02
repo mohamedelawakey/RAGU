@@ -147,7 +147,7 @@ class RAGPipeline:
         logger.info("RAGPipeline: [3/4] Building prompt...")
 
         long_term_memory_context = ""
-        exclude_ids = [msg["id"] for msg in (history or [])]
+        exclude_ids = [msg.get("message_id") or msg.get("id") for msg in (history or []) if (msg.get("message_id") or msg.get("id"))]
         if session_id:
             chat_retriever = ChatMemoryRetriever()
             memory_hits = await chat_retriever.search_memory(
