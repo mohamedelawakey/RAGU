@@ -18,20 +18,21 @@ import uuid
 class AuthService:
     @staticmethod
     async def create_user(user: UserCreate, db: Connection) -> UserResponse:
-        existing = await db.fetchrow(
-            Config.CHECK_USER_EXISTS_QUERY,
-            user.email, user.username
-        )
-        if existing:
-            raise UserAlreadyExistsException()
+        async with db.transaction():
+            existing = await db.fetchrow(
+                Config.CHECK_USER_EXISTS_QUERY,
+                user.email, user.username
+            )
+            if existing:
+                raise UserAlreadyExistsException()
 
-        new_id = str(uuid.uuid4())
-        hashed_pw = get_password_hash(user.password)
+            new_id = str(uuid.uuid4())
+            hashed_pw = get_password_hash(user.password)
 
-        await db.execute(
-            Config.INSERT_USER_QUERY,
-            new_id, user.username, user.email, hashed_pw
-        )
+            await db.execute(
+                Config.INSERT_USER_QUERY,
+                new_id, user.username, user.email, hashed_pw
+            )
 
         return UserResponse(id=new_id, username=user.username, email=user.email)
 
