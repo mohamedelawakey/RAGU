@@ -117,5 +117,6 @@ class Config:
     CHAT_RETRIEVER_METRIC_TYPE = "COSINE"
     CHAT_RETRIEVER_EF = 64
     FETCH_CHAT_MESSAGES_QUERY = """
-        SELECT id, role, content, session_id FROM chat_messages WHERE id = ANY($1)
+        SELECT id, role, content, session_id 
+        FROM chat_messages WHERE id = ANY($1)
     """
