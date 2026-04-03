@@ -120,3 +120,15 @@ class Config:
         SELECT id, role, content, session_id 
         FROM chat_messages WHERE id = ANY($1)
     """
+
+    # Fallback Configurations (when no matches found)
+    RETRIEVER_FALLBACK_LIMIT = 5
+    RETRIEVER_FALLBACK_SCORE = 0.01
+    RETRIEVER_FALLBACK_QUERY = """
+        SELECT c.id, c.text_content
+        FROM document_chunks c
+        JOIN documents d ON c.document_id = d.id
+        WHERE d.user_id = $1
+        ORDER BY d.upload_date DESC, c.id ASC
+        LIMIT $2
+    """
