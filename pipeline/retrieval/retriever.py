@@ -23,7 +23,10 @@ class Retriever:
             logger.warning("Empty query provided to Retriever.")
             return []
 
-        logger.info(f"Retriever: running hybrid search [query_length={len(query)}, user_id={user_id}]")
+        logger.info(
+            f"Retriever: running hybrid search "
+            f"[query_length={len(query)}, user_id={user_id}]"
+        )
         search_results = await self.hybrid_search.search(query, user_id)
 
         if search_results is None:
@@ -31,7 +34,34 @@ class Retriever:
             return None
 
         if not search_results:
-            logger.info("Retriever: no relevant chunks found for the query.")
+            logger.info(
+                "Retriever: no relevant chunks found. "
+                "Checking for document fallback..."
+            )
+
+            try:
+                async with PostgresDBConnection.get_db_connection() as conn:
+                    rows = await conn.fetch(
+                        Config.RETRIEVER_FALLBACK_QUERY,
+                        user_id,
+                        Config.RETRIEVER_FALLBACK_LIMIT
+                    )
+                    if rows:
+                        logger.info(
+                            f"Retriever: Fallback triggered. "
+                            f"Retrieved {len(rows)} chunks."
+                        )
+                        return [
+                            {
+                                "chunk_id": row["id"],
+                                "score": Config.RETRIEVER_FALLBACK_SCORE,
+                                "text_content": row["text_content"].strip()
+                            }
+                            for row in rows
+                        ]
+            except Exception as e:
+                logger.error(f"Retriever: Fallback failed: {e}")
+
             return []
 
         ranked_chunk_ids: List[str] = [r["chunk_id"] for r in search_results]
@@ -45,7 +75,9 @@ class Retriever:
                     list(ranked_chunk_ids)
                 )
         except Exception:
-            logger.exception("Retriever: failed to fetch chunk text from Postgres.")
+            logger.exception(
+                "Retriever: failed to fetch chunk text from Postgres."
+            )
             return None
 
         if not rows:

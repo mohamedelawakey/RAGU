@@ -1,6 +1,5 @@
 from utils.logger import get_logger
 from .prompts import Prompts
-import uuid
 
 logger = get_logger("prompt_builder.module")
 
@@ -14,7 +13,7 @@ class PromptBuilder:
             logger.error("User question must not be empty")
             raise ValueError("User question must not be empty")
 
-        boundary_token = f"BOUNDARY_{uuid.uuid4().hex}_BOUNDARY"
+        boundary_token = "|#|CONTEXT_START|#|"
         has_context = bool(context and context.strip())
 
         system_message = Prompts.get_system_prompt(
