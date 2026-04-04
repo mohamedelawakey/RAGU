@@ -27,7 +27,11 @@ class ChatService:
     @staticmethod
     async def get_chat_messages(session_id: str, user_id: str) -> list:
         async with PostgresDBConnection.get_db_connection() as conn:
-            session = await conn.fetchrow("SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2", session_id, user_id)
+            session = await conn.fetchrow(
+                "SELECT id FROM chat_sessions WHERE id = $1 AND user_id = $2",
+                session_id,
+                user_id
+            )
             if not session:
                 raise ValueError("Session not found or forbidden")
             records = await conn.fetch(Config.GET_CHAT_MESSAGES_QUERY, session_id)
@@ -70,12 +74,20 @@ class ChatService:
 
         async with PostgresDBConnection.get_db_connection() as conn:
             if is_new_session:
+                title = (
+                    query[:Config.CHAT_MAX_TITLE_LENGTH] + "..."
+                    if len(query) > Config.CHAT_MAX_TITLE_LENGTH
+                    else query
+                )
                 await conn.execute(
                     Config.INSERT_CHAT_SESSION_QUERY,
                     session_id,
                     user_id,
                     title
                 )
+                # Update dashboard stats
+                from backend.features.dashboard.service import DashboardService
+                await DashboardService.increment_chat_count(user_id, conn)
             else:
                 await conn.execute(
                     Config.UPDATE_CHAT_SESSION_TIME_QUERY,
@@ -96,6 +108,8 @@ class ChatService:
                     "user",
                     query
                 )
+                from backend.features.dashboard.service import DashboardService
+                await DashboardService.increment_question_count(user_id, conn)
 
         chat_retriever = ChatMemoryRetriever()
         if not retry_message_id:
@@ -186,10 +200,18 @@ class ChatService:
                 await q.put(None)
 
                 final_text = "".join(full_assistant_response)
+                # Clean up any leaked boundaries from the final text
+                final_text = re.sub(r"\|#\|CONTEXT_(START|END)\|#\|", "", final_text).strip()
+                
                 if final_text:
                     try:
                         async with PostgresDBConnection.get_db_connection() as conn:
                             await conn.execute(Config.INSERT_CHAT_MESSAGE_QUERY, assistant_message_id, session_id, "assistant", final_text)
+                            
+                            # Increment tokens in dashboard stats
+                            token_count = len(final_text.split()) + 1
+                            from backend.features.dashboard.service import DashboardService
+                            await DashboardService.increment_token_usage(user_id, token_count, conn)
 
                         await chat_retriever.insert_memory(assistant_message_id, session_id, user_id, "assistant", final_text)
                         logger.info(f"ChatService: Background response saved for session {session_id}")
@@ -207,5 +229,11 @@ class ChatService:
                 yield f"data: {chunk}\n\n"
                 break
 
-            payload = json.dumps({"text": chunk}, ensure_ascii=False)
+            # Filter out internal boundary tokens |#|CONTEXT_START|#| or |#|CONTEXT_END|#|
+            clean_chunk = re.sub(r"\|#\|CONTEXT_(START|END)\|#\|", "", chunk)
+            if not clean_chunk.strip() and chunk.strip():
+                # If chunk was ONLY a boundary, skip it
+                continue
+
+            payload = json.dumps({"text": clean_chunk}, ensure_ascii=False)
             yield f"data: {payload}\n\n"
