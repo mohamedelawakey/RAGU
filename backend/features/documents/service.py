@@ -57,7 +57,7 @@ class DocumentService:
                     total_size += len(chunk)
                     if total_size > Config.MAX_FILE_SIZE_BYTES:
                         raise PayloadTooLargeException(
-                            detail="File size exceeds the 50MB limit."
+                            detail=f"File size exceeds the {Config.MAX_FILE_SIZE_MB}MB limit."
                         )
                     f.write(chunk)
         except Exception as e:
@@ -77,6 +77,10 @@ class DocumentService:
             Config.INSERT_DOCUMENT_QUERY,
             user_id, file.filename, file_path
         )
+
+        # Update dashboard stats
+        from backend.features.dashboard.service import DashboardService
+        await DashboardService.update_file_count(user_id, 1, db)
 
         await IngestionProducer.publish_ingestion_job(
             file_path=file_path,
@@ -139,5 +143,9 @@ class DocumentService:
                 logger.info(f"Deleted Milvus vectors for document {doc_id}")
             except Exception as e:
                 logger.error(f"Failed to delete Milvus vectors for document {doc_id}: {e}")
+
+        # Update dashboard stats
+        from backend.features.dashboard.service import DashboardService
+        await DashboardService.update_file_count(user_id, -1, db)
 
         return True
