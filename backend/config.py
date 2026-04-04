@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(override=True)
 
 # postgres config
 DB_NAME = os.getenv("DB_NAME", "edu_rag")
@@ -56,7 +56,7 @@ RABBITMQ_QUEUE_NAME = os.getenv(
 # documents config
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/edu_rag_uploads")
 MAX_FILES_PER_USER = int(os.getenv("MAX_FILES_PER_USER", 2))
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 50))
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 7))
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 # postgres queries
@@ -76,7 +76,7 @@ GET_USER_AUTH_QUERY = """
     SELECT id, hashed_password FROM users WHERE email = $1 OR username = $1
 """
 GET_USER_BY_ID_QUERY = """
-    SELECT id, username, email FROM users WHERE id = $1
+    SELECT id, username, email, is_verified FROM users WHERE id = $1
 """
 CHECK_USER_DOCUMENT_QUOTA_QUERY = """
     SELECT COUNT(*) FROM documents WHERE user_id = $1
@@ -153,6 +153,13 @@ SENSITIVE_KEYS.update([k.strip().lower() for k in extra_masked_keys if k.strip()
 
 # compression config (middleware)
 GZIP_MIN_SIZE = int(os.getenv("GZIP_MIN_SIZE", 1000))
+
+# smtp config
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+CONTACT_EMAIL = os.getenv("CONTACT_EMAIL", "mohamedelawakey@gmail.com")
 
 
 class Config:
@@ -236,6 +243,13 @@ class Config:
 
     # compression config (middleware)
     GZIP_MIN_SIZE = GZIP_MIN_SIZE
+
+    # smtp config
+    SMTP_HOST = SMTP_HOST
+    SMTP_PORT = SMTP_PORT
+    SMTP_USER = SMTP_USER
+    SMTP_PASSWORD = SMTP_PASSWORD
+    CONTACT_EMAIL = CONTACT_EMAIL
 
     # chat feature configs
     CHAT_MAX_TITLE_LENGTH = int(os.getenv("CHAT_MAX_TITLE_LENGTH", 50))
