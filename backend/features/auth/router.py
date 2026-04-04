@@ -1,7 +1,8 @@
 from backend.api.dependencies import get_db, get_redis, oauth2_scheme
 from backend.features.auth.schemas import (
     UserCreate, UserResponse, LogoutRequest, TokenResponse,
-    RefreshTokenRequest, UpdateUsernameRequest, UpdatePasswordRequest
+    RefreshTokenRequest, UpdateUsernameRequest, UpdatePasswordRequest,
+    VerifyOTPRequest, UpdateEmailRequest
 )
 from backend.core.security import decode_token
 from fastapi.security import OAuth2PasswordRequestForm
@@ -145,7 +146,93 @@ async def update_password(
     try:
         payload = decode_token(access_token)
         user_id = payload.get("sub")
-        return await AuthService.update_password(user_id, request.new_password, db)
+        return await AuthService.update_password(
+            user_id, 
+            request.old_password, 
+            request.new_password, 
+            db
+        )
+    except exceptions.CredentialsException:
+        raise
     except Exception as e:
         logger.error(f"Update Password Error: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.post(
+    "/send-otp",
+    dependencies=[Depends(RateLimit(times=3, seconds=300))]
+)
+async def send_otp(
+    access_token: str = Depends(oauth2_scheme),
+    db: Connection = Depends(get_db)
+):
+    try:
+        payload = decode_token(access_token)
+        user_id = payload.get("sub")
+        return await AuthService.send_otp(user_id, db)
+    except exceptions.CredentialsException:
+        raise
+    except Exception as e:
+        logger.error(f"Send OTP Error: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.post(
+    "/verify-otp",
+    dependencies=[Depends(RateLimit(times=10, seconds=60))]
+)
+async def verify_otp(
+    request: VerifyOTPRequest,
+    access_token: str = Depends(oauth2_scheme),
+    db: Connection = Depends(get_db)
+):
+    try:
+        payload = decode_token(access_token)
+        user_id = payload.get("sub")
+        return await AuthService.verify_otp(user_id, request.otp_code, db)
+    except exceptions.CredentialsException:
+        raise
+    except Exception as e:
+        logger.error(f"Verify OTP Error: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.put(
+    "/email",
+    dependencies=[Depends(RateLimit(times=3, seconds=300))]
+)
+async def update_email_request(
+    request: UpdateEmailRequest,
+    access_token: str = Depends(oauth2_scheme),
+    db: Connection = Depends(get_db)
+):
+    try:
+        payload = decode_token(access_token)
+        user_id = payload.get("sub")
+        return await AuthService.request_email_change(user_id, request.new_email, db)
+    except exceptions.UserAlreadyExistsException:
+        raise
+    except Exception as e:
+        logger.error(f"Update Email Request Error: {e}")
+        raise exceptions.InternalServerException()
+
+
+@router.post(
+    "/verify-email-change",
+    dependencies=[Depends(RateLimit(times=10, seconds=60))]
+)
+async def verify_email_change(
+    request: VerifyOTPRequest,
+    access_token: str = Depends(oauth2_scheme),
+    db: Connection = Depends(get_db)
+):
+    try:
+        payload = decode_token(access_token)
+        user_id = payload.get("sub")
+        return await AuthService.verify_email_change(user_id, request.otp_code, db)
+    except exceptions.CredentialsException:
+        raise
+    except Exception as e:
+        logger.error(f"Verify Email Change Error: {e}")
         raise exceptions.InternalServerException()

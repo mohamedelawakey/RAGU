@@ -11,6 +11,7 @@ class UserResponse(BaseModel):
     id: str
     username: str
     email: EmailStr
+    is_verified: bool = False
 
 
 class TokenResponse(BaseModel):
@@ -40,4 +41,13 @@ class UpdateUsernameRequest(BaseModel):
 
 
 class UpdatePasswordRequest(BaseModel):
+    old_password: str
     new_password: str
+
+
+class VerifyOTPRequest(BaseModel):
+    otp_code: str
+
+
+class UpdateEmailRequest(BaseModel):
+    new_email: EmailStr
