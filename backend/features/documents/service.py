@@ -1,4 +1,5 @@
 from backend.mq.producers.ingestion_producer import IngestionProducer
+from backend.features.dashboard.service import DashboardService
 from backend.core.exceptions import (
     ForbiddenException,
     PayloadTooLargeException,
@@ -78,10 +79,7 @@ class DocumentService:
             user_id, file.filename, file_path
         )
 
-        # Update dashboard stats
-        from backend.features.dashboard.service import DashboardService
         await DashboardService.update_file_count(user_id, 1, db)
-
         await IngestionProducer.publish_ingestion_job(
             file_path=file_path,
             user_id=user_id,
@@ -144,8 +142,6 @@ class DocumentService:
             except Exception as e:
                 logger.error(f"Failed to delete Milvus vectors for document {doc_id}: {e}")
 
-        # Update dashboard stats
-        from backend.features.dashboard.service import DashboardService
         await DashboardService.update_file_count(user_id, -1, db)
 
         return True
