@@ -25,14 +25,18 @@ async def reset_dbs():
     print("Connecting to Postgres...")
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
-        print("DATABASE_URL not set in .env")
-        return
+        db_user = os.getenv("DB_USER", "postgres")
+        db_pass = os.getenv("DB_PASSWORD", "")
+        db_host = os.getenv("DB_HOST", "localhost")
+        db_port = os.getenv("DB_PORT", "5432")
+        db_name = os.getenv("DB_NAME", "edu_rag")
+        db_url = f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
 
-    if db_url.startswith("postgres://"):
+    if "postgresql+asyncpg://" not in db_url:
         db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif db_url.startswith("postgresql://"):
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+    print(f"Connecting to Postgres at {db_host}:{db_port}...")
     engine = create_async_engine(db_url, echo=False)
 
     async with engine.begin() as conn:
