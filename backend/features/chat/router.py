@@ -6,6 +6,7 @@ from backend.features.chat.schemas import (
     ChatMessageResponse, ChatRenameRequest,
     ChatRequest, ChatSessionResponse,
 )
+from backend.core.rate_limit import RateLimit
 from fastapi import APIRouter, Depends
 from utils.logger import get_logger
 from typing import List
@@ -15,7 +16,7 @@ logger = get_logger("features.chat.router")
 router = APIRouter()
 
 
-@router.post("/query")
+@router.post("/query", dependencies=[Depends(RateLimit(times=3, seconds=60))])
 async def chat_query(
     request: ChatRequest,
     user_id: str = Depends(get_current_user)

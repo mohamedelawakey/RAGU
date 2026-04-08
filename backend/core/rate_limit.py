@@ -2,9 +2,11 @@ from backend.db.connections.redis import AsyncRedisDBConnection
 from fastapi_limiter.depends import RateLimiter
 from utils.logger import get_logger
 from pyrate_limiter import (
-    RedisBucket, TimeClock, Limiter,
-    BucketFactory, Rate, RateItem
+    Limiter, Rate, RateItem
 )
+from pyrate_limiter.clocks import MonotonicClock as TimeClock
+from pyrate_limiter.abstracts import BucketFactory
+from pyrate_limiter.buckets import RedisBucket
 
 logger = get_logger("core.rate_limit")
 
@@ -26,11 +28,11 @@ class AsyncRedisBucketFactory(BucketFactory):
 
     async def get(self, item: RateItem) -> RedisBucket:
         redis_pool = await self._get_redis()
-        return RedisBucket(self.rates, redis_pool, f"ratelimit:{item.name}")
+        return await RedisBucket.init(self.rates, redis_pool, f"ratelimit:{item.name}")
 
 
 def RateLimit(times: int, seconds: int) -> RateLimiter:
-    rates = [Rate(times, seconds)]
+    rates = [Rate(times, seconds * 1000)]
     factory = AsyncRedisBucketFactory(rates)
     return RateLimiter(limiter=Limiter(factory))
 

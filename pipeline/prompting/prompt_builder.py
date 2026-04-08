@@ -6,7 +6,12 @@ logger = get_logger("prompt_builder.module")
 
 class PromptBuilder:
     @staticmethod
-    def build(user_question: str, context: str, history: list = None) -> list[dict]:
+    def build(
+        user_question: str,
+        context: str,
+        history: list = None,
+        user_filenames: list[str] = None
+    ) -> list[dict]:
         logger.info("Building secure prompt for the user question...")
 
         if not user_question or not user_question.strip():
@@ -18,7 +23,8 @@ class PromptBuilder:
 
         system_message = Prompts.get_system_prompt(
             boundary_token,
-            has_context=has_context
+            has_context=has_context,
+            user_filenames=user_filenames
         )
 
         user_message = Prompts.get_user_prompt(
