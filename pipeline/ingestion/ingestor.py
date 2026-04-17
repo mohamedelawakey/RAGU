@@ -15,10 +15,14 @@ logger = get_logger("ingestion.module")
 
 
 class DocumentIngestor:
-    @staticmethod
     async def ingest_document(
         filePath: str, user_id: str, document_id: int
     ) -> tuple[bool, str]:
+        async def _check_active() -> bool:
+            async with PostgresDBConnection.get_db_connection() as conn:
+                res = await conn.fetchval(Config.CHECK_DOCUMENT_EXISTS, document_id)
+                return res is not None
+
         logger.info(
             f"Starting ingestion pipeline for document: {filePath} "
             f"[user_id={user_id}, doc_id={document_id}]"
@@ -53,6 +57,11 @@ class DocumentIngestor:
             if not text:
                 return False, "No text extracted from document."
 
+            # [CHECKPOINT] Check if doc still exists after extraction
+            if not await _check_active():
+                logger.info(f"[doc_id={document_id}] Ingestion aborted: Document deleted by user.")
+                return True, "Aborted: Document deleted"
+
             # 2. Cleaning & Chunking
             logger.info("Cleaning and chunking text...")
             try:
@@ -66,37 +75,51 @@ class DocumentIngestor:
             except Exception as e:
                 return False, f"Text processing error: {str(e)}"
 
-            # 3. Embedding (Batched to prevent memory/heartbeat issues)
+            # 3. Embedding (Logical Batching for abortion responsiveness)
             logger.info(f"Generating embeddings for {len(chunks)} chunks...")
             all_embeddings = []
-            batch_size = Config.BATCH_SIZE * Config.INGESTION_BATCH_MULTIPLIER
+            logical_batch_size = Config.LOGICAL_BATCH_SIZE
 
             try:
-                for i in range(0, len(chunks), batch_size):
-                    batch = chunks[i:i + batch_size]
-                    num_batches = (len(chunks) - 1) // batch_size + 1
-                    logger.info(
-                        f"Processing embedding batch {i//batch_size + 1}/"
-                        f"{num_batches}..."
-                    )
+                for i in range(0, len(chunks), logical_batch_size):
+                    # [CHECKPOINT] check if doc still exists before next logical batch
+                    if not await _check_active():
+                        logger.info(
+                            f"[doc_id={document_id}] Ingestion aborted: "
+                            "Document deleted by user "
+                            f"(batch {i//logical_batch_size + 1})"
+                        )
+                        return True, "Aborted: Document deleted"
+
+                    batch = chunks[i:i + logical_batch_size]
+                    num_batches = (len(chunks) - 1) // logical_batch_size + 1
+                    if num_batches > 1:
+                        logger.info(
+                            f"Processing embedding logical batch "
+                            f"{i//logical_batch_size + 1}/{num_batches}..."
+                        )
 
                     batch_embeddings = await asyncio.to_thread(
                         Embedding.embed, batch
                     )
                     if not batch_embeddings:
-                        return (
-                            False,
-                            f"Embedding failed at batch {i//batch_size + 1}"
-                        )
+                        return False, "Embedding engine failed at logical batch."
 
                     all_embeddings.extend(batch_embeddings)
 
-                    await asyncio.sleep(Config.EMBEDDING_SLEEP_TIME)
             except Exception as e:
                 return False, f"Embedding engine error: {str(e)}"
 
             if len(all_embeddings) != len(chunks):
                 return False, "Mismatch between chunk count and embedding count."
+
+            # [CHECKPOINT] Final check before persisting to DB
+            if not await _check_active():
+                logger.info(
+                    f"[doc_id={document_id}] Ingestion aborted: "
+                    "Document deleted by user (pre-storage)."
+                )
+                return True, "Aborted: Document deleted"
 
             # 4. Storage (Postgres)
             logger.info("Saving chunks to PostgreSQL...")
