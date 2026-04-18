@@ -1,6 +1,7 @@
 from .load_models import LoadModel
 from typing import List, Optional
 from utils.logger import get_logger
+from pipeline.config import Config
 
 logger = get_logger("query_embedding.module")
 
@@ -18,10 +19,16 @@ class QueryEmbedding:
             return None
 
         try:
+            prefix = ""
+            if "e5" in Config.EMBEDDING_MODEL.lower():
+                prefix = "query: "
+
+            prefixed_query = prefix + query if prefix else query
+
             logger.info(f"Generating embedding for query [length={len(query)}]")
 
             embedding = _model.encode(
-                query,
+                prefixed_query,
                 show_progress_bar=False,
                 convert_to_numpy=True
             )
