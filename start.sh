@@ -49,18 +49,31 @@ echo "------------------------------------------------"
 echo "🚀 Launching Backend API, Worker, and Frontend..."
 docker compose up -d backend-api backend-worker frontend nginx
 echo "------------------------------------------------"
-echo "✨ System is initializing..."
-sleep 5
+# Step 4: Final verification with polling (Next.js needs time to compile first hit)
+echo "🔍 Verifying connection to frontend (this might take a minute on first run)..."
+MAX_RETRIES=20
+COUNT=0
+SUCCESS=false
 
-# Final check using curl with a longer timeout (Next.js dev server needs time to compile on first hit)
-echo "🔍 Verifying connection to frontend..."
-if curl -s --max-time 15 http://localhost | grep -q "RAGU"; then
+while [ $COUNT -lt $MAX_RETRIES ]; do
+    if curl -s --max-time 5 http://localhost | grep -q "RAGU"; then
+        SUCCESS=true
+        break
+    fi
+    echo -n "⏳ Waiting for compilation ($((COUNT+1))/$MAX_RETRIES)..."
+    echo -ne "\r"
+    COUNT=$((COUNT+1))
+    sleep 3
+done
+
+echo "" # New line after the polling indicator
+
+if [ "$SUCCESS" = true ]; then
     echo "✅ SUCCESS! EDU RAG is reachable at: http://localhost"
     echo "📊 Dashboard & Chat are ready for use."
 else
     echo "⚠️  Frontend is taking longer than expected to compile."
-    echo "👉 Try refreshing your browser in 10-15 seconds."
-    echo "👉 If 'localhost' fails, try: http://127.0.0.1"
+    echo "👉 Try refreshing your browser manually in a few seconds: http://localhost"
     echo "📂 Run 'docker compose ps' to ensure all containers stay 'Up'."
 fi
 
