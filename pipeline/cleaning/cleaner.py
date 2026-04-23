@@ -13,6 +13,7 @@ class Cleaner:
         if not text:
             return ""
 
+        text = text.replace('\x00', '')
         text = unicodedata.normalize('NFKC', text)
 
         if Config.STRIP_KASHIDA:
