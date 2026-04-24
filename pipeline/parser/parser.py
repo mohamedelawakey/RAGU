@@ -13,7 +13,7 @@ logger = get_logger("universal_extractor.module")
 class DocumentExtractor:
     _converter = None
     _lock = threading.Lock()
-    DOCLING_EXTENSIONS = {'.pdf', '.docx', '.pptx', '.xlsx', '.html'}
+    DOCLING_EXTENSIONS = {'.pdf', '.docx', '.pptx'}
 
     @classmethod
     def get_converter(cls):
